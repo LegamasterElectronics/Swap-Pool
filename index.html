@@ -215,6 +215,28 @@
   </div>
 </div>
 
+<!-- Edit item modal — Wouter only -->
+<div class="modal-backdrop" id="editModal">
+  <div class="modal">
+    <h2>Item bewerken</h2>
+    <label>Type</label>
+    <select id="editModel" onchange="toggleOtherTypeEdit()"></select>
+    <input type="text" id="editModelOther" placeholder="type…" style="display:none;margin-top:6px;">
+    <label>Serienummer</label>
+    <input type="text" id="editSn">
+    <label>ME-nummer</label>
+    <input type="text" id="editMe">
+    <label id="editBouwjaarLabel" style="display:none;">Bouwjaar</label>
+    <input type="text" id="editBouwjaar" style="display:none;">
+    <label>Notitie</label>
+    <textarea id="editNotes"></textarea>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('editModal')">Annuleren</button>
+      <button class="btn-primary" onclick="submitEdit()">Opslaan</button>
+    </div>
+  </div>
+</div>
+
 <!-- Deliver item modal — Wouter only -->
 <div class="modal-backdrop" id="deliverModal">
   <div class="modal">
@@ -232,7 +254,7 @@
 
 <script>
   // ── Config ───────────────────────────────────────────────
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxzRAmIlZgdp5P1rPdl2wk0oOsD-7W67F4QvcyVVJyu5PzZqk8in2-IUiEGYvjkxlPN7Q/exec'; // Apps Script deployment URL
+  const API_URL = 'PLAK_HIER_JE_WEB_APP_URL'; // Apps Script deployment URL
 
   const CATEGORIES = [
     { key: 'screens',   title: 'Swapscreens',   hasBouwjaar: true },
@@ -252,6 +274,7 @@
   let sortDir = 'asc';
   let pendingReserveId = null;
   let pendingDeliverId = null;
+  let editingId = null;
 
   // cache per categorie: { pool: [...], archive: [...], loaded: bool }
   const cache = {};
@@ -439,11 +462,11 @@
         let actions = '';
         if(s.Status === 'Beschikbaar'){
           actions += `<button class="warn-btn" onclick="openReserveModal('${s.ID}')">In gebruik / rood</button>`;
+        } else if(s.Status === 'Gereserveerd'){
+          actions += `<button onclick="resetAvailable('${s.ID}')">Zet beschikbaar</button>`;
         }
         if(wouterMode){
-          if(s.Status === 'Gereserveerd'){
-            actions += `<button onclick="resetAvailable('${s.ID}')">Zet beschikbaar</button>`;
-          }
+          actions += `<button onclick="openEditModal('${s.ID}')">Bewerken</button>`;
           actions += `<button onclick="openDeliverModal('${s.ID}')">Uitleveren</button>`;
           actions += `<button onclick="deleteItem('${s.ID}')">Verwijderen</button>`;
         }
@@ -487,6 +510,10 @@
     document.getElementById(id).classList.remove('open');
   }
 
+  function findLocal(id){
+    return cache[activeCat].pool.find(s => s.ID === id);
+  }
+
   // ── Markeer als gereserveerd (open, geen wachtwoord) ─────
   function openReserveModal(id){
     pendingReserveId = id;
@@ -495,23 +522,80 @@
   }
   async function submitReserve(){
     const notitie = document.getElementById('reserveNote').value.trim();
-    await post({ action: 'markReserved', id: pendingReserveId, notitie });
+    const id = pendingReserveId;
+    const res = await post({ action: 'markReserved', id, notitie });
+    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    const item = findLocal(id);
+    if(item){ item.Status = 'Gereserveerd'; item.Notitie = notitie; }
     closeModal('reserveModal');
-    await refreshCurrent();
+    render();
+  }
+
+  // ── Open actie: iedereen mag terugzetten naar beschikbaar ──
+  async function resetAvailable(id){
+    const res = await post({ action: 'resetAvailable', id });
+    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    const item = findLocal(id);
+    if(item){ item.Status = 'Beschikbaar'; }
+    render();
   }
 
   // ── Wouter-acties ─────────────────────────────────────────
-  async function resetAvailable(id){
-    const res = await post({ action: 'resetAvailable', id, password: wouterPassword });
-    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
-    await refreshCurrent();
-  }
-
   async function deleteItem(id){
     if(!confirm('Item definitief verwijderen?')) return;
     const res = await post({ action: 'delete', id, password: wouterPassword });
     if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
-    await refreshCurrent();
+    cache[activeCat].pool = cache[activeCat].pool.filter(s => s.ID !== id);
+    render();
+  }
+
+  function openEditModal(id){
+    const item = findLocal(id);
+    if(!item) return;
+    pendingDeliverId = null;
+    editingId = id;
+    const meta = currentCatMeta();
+    const opts = TYPE_OPTIONS[activeCat] || [];
+    const sel = document.getElementById('editModel');
+    sel.innerHTML = opts.map(t => `<option value="${t}">${t}</option>`).join('')
+      + '<option value="__other__">+ Ander type</option>';
+    if(opts.includes(item.Type)){
+      sel.value = item.Type;
+      document.getElementById('editModelOther').style.display = 'none';
+    } else {
+      sel.value = '__other__';
+      document.getElementById('editModelOther').style.display = 'block';
+      document.getElementById('editModelOther').value = item.Type || '';
+    }
+    document.getElementById('editSn').value = item.Serienummer || '';
+    document.getElementById('editMe').value = item.MEnummer || '';
+    document.getElementById('editBouwjaarLabel').style.display = meta.hasBouwjaar ? 'block' : 'none';
+    document.getElementById('editBouwjaar').style.display = meta.hasBouwjaar ? 'block' : 'none';
+    document.getElementById('editBouwjaar').value = item.Bouwjaar || '';
+    document.getElementById('editNotes').value = item.Notitie || '';
+    document.getElementById('editModal').classList.add('open');
+  }
+  function toggleOtherTypeEdit(){
+    const isOther = document.getElementById('editModel').value === '__other__';
+    document.getElementById('editModelOther').style.display = isOther ? 'block' : 'none';
+  }
+  async function submitEdit(){
+    const sel = document.getElementById('editModel').value;
+    const type = sel === '__other__' ? document.getElementById('editModelOther').value.trim() : sel;
+    const serienummer = document.getElementById('editSn').value.trim();
+    const menummer = document.getElementById('editMe').value.trim();
+    const bouwjaar = document.getElementById('editBouwjaar').value.trim();
+    const notitie = document.getElementById('editNotes').value.trim();
+    if(!type || !serienummer){ alert('Type en serienummer zijn verplicht.'); return; }
+    const res = await post({ action: 'update', id: editingId, type, serienummer, menummer, bouwjaar, notitie, password: wouterPassword });
+    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    const item = findLocal(editingId);
+    if(item){
+      item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer;
+      item.Bouwjaar = bouwjaar || null; item.Notitie = notitie;
+    }
+    closeModal('editModal');
+    render();
   }
 
   function openAddModal(){
@@ -541,8 +625,12 @@
     if(!type || !serienummer){ alert('Type en serienummer zijn verplicht.'); return; }
     const res = await post({ action: 'add', type, serienummer, menummer, bouwjaar, notitie, password: wouterPassword });
     if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    cache[activeCat].pool.push({
+      ID: res.id, Type: type, Serienummer: serienummer, MEnummer: menummer,
+      Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie
+    });
     closeModal('addModal');
-    await refreshCurrent();
+    render();
   }
 
   function openDeliverModal(id){
@@ -554,10 +642,19 @@
   async function submitDeliver(){
     const ticket = document.getElementById('delTicket').value.trim();
     const klant = document.getElementById('delKlant').value.trim();
-    const res = await post({ action: 'deliver', id: pendingDeliverId, ticket, klant, password: wouterPassword });
+    const id = pendingDeliverId;
+    const res = await post({ action: 'deliver', id, ticket, klant, password: wouterPassword });
     if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    const idx = cache[activeCat].pool.findIndex(s => s.ID === id);
+    if(idx > -1){
+      const [item] = cache[activeCat].pool.splice(idx, 1);
+      item.UitgeleverdOp = new Date().toISOString();
+      item.Ticket = ticket;
+      item.Klant = klant;
+      cache[activeCat].archive.unshift(item);
+    }
     closeModal('deliverModal');
-    await refreshCurrent();
+    render();
   }
 
   // ── Init ─────────────────────────────────────────────────
