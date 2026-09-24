@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swappool — beheer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #00368e; --accent: #f39325; --accent-dark: #d97e14; --cyan: #19b0e4;
+    --paper: #f6f7f9; --line: #d9dee3; --radius: 8px;
+    --text: #1c2530; --muted: #64748b;
+    --ok: #1a7a45; --ok-bg: #e8f6ee;
+    --warn: #9a6a00; --warn-bg: #fff4d9;
+    --err: #b3261e; --err-bg: #fdecea;
+    --grey-bg: #eef0f3;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--paper); color: var(--text); font-size: 14px; }
+  .wrap{max-width:1220px;margin:0 auto;padding:0 20px 80px;}
+
+  /* ── Top bar ────────────────────────────────────────────── */
+  .topbar{background:var(--navy);color:#fff;}
+  .topbar-inner{max-width:1220px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);}
+  .wouter-toggle{display:flex;align-items:center;gap:8px;}
+  .wouter-toggle button{
+    background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.35);
+    padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  .wouter-toggle button.on{background:var(--accent);border-color:var(--accent);}
+  .wouter-toggle button:hover{opacity:0.9;}
+
+  /* ── Category tabs (top-level, per pagina in de oude opzet) ─ */
+  .cattabs{background:#fff;border-bottom:1px solid var(--line);}
+  .cattabs-inner{max-width:1220px;margin:0 auto;padding:0 20px;display:flex;gap:2px;flex-wrap:wrap;}
+  .cattabs button{
+    padding:14px 18px;border:none;background:transparent;font-size:13.5px;font-weight:600;
+    color:var(--muted);cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;
+  }
+  .cattabs button.active{color:var(--navy);border-bottom-color:var(--accent);}
+  .cattabs button:hover{color:var(--navy);}
+
+  /* ── Header ─────────────────────────────────────────────── */
+  header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin:24px 0;border-bottom:1px solid var(--line);padding-bottom:16px;}
+  h1{font-size:22px;margin:0;font-weight:700;color:var(--navy);}
+  h1 span{color:var(--muted);font-weight:400;}
+  .counts{display:flex;gap:8px;flex-wrap:wrap;}
+  .count-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;padding:5px 12px;border-radius:999px;}
+  .count-tag.available{color:var(--ok);background:var(--ok-bg);}
+  .count-tag.reserved{color:var(--warn);background:var(--warn-bg);}
+  .count-tag.delivered{color:var(--muted);background:var(--grey-bg);}
+
+  /* ── Sub-tabs (Pool / Archief) ──────────────────────────── */
+  .tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--grey-bg);padding:4px;border-radius:var(--radius);width:fit-content;}
+  .tabs button{font-size:13px;font-weight:600;padding:8px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-family:inherit;}
+  .tabs button.active{background:#fff;color:var(--navy);box-shadow:0 1px 2px rgba(0,0,0,.06);}
+
+  /* ── Toolbar ────────────────────────────────────────────── */
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
+  .toolbar input[type=text]{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;min-width:220px;background:#fff;}
+  .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
+  .btn-primary:hover{background:var(--accent-dark);}
+
+  /* ── Table ──────────────────────────────────────────────── */
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);font-weight:650;padding:10px 14px;background:var(--grey-bg);border-bottom:1px solid var(--line);}
+  thead th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+  thead th.sortable:hover{color:var(--navy);}
+  thead th.sortable .arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:0.5;}
+  thead th.sortable.active{color:var(--navy);}
+  thead th.sortable.active .arrow{opacity:1;}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:rgba(0,54,142,0.02);}
+  .id-cell{font-weight:600;font-size:12px;color:var(--muted);}
+  .sn-cell{font-size:12.5px;color:var(--text);}
+  .model-cell{font-weight:600;}
+  .notes-cell{color:var(--muted);font-size:12px;max-width:200px;}
+
+  .status-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:650;}
+  .status-pill.Beschikbaar{background:var(--ok-bg);color:var(--ok);}
+  .status-pill.Gereserveerd{background:var(--warn-bg);color:var(--warn);}
+  .status-pill.Uitgeleverd{background:var(--grey-bg);color:var(--muted);}
+
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .row-actions button{font-size:11.5px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:var(--text);}
+  .row-actions button:hover{border-color:var(--navy);color:var(--navy);}
+  .row-actions button.warn-btn{border-color:var(--warn-bg);color:var(--warn);}
+
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+  .loading{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+
+  /* ── Modal ──────────────────────────────────────────────── */
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(28,37,48,0.45);align-items:center;justify-content:center;z-index:10;padding:20px;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:#fff;border-radius:12px;padding:28px;width:100%;max-width:380px;border-top:4px solid var(--accent);}
+  .modal h2{font-size:16px;margin:0 0 16px;font-weight:700;color:var(--navy);}
+  .modal label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin:12px 0 4px;font-weight:600;}
+  .modal input, .modal textarea, .modal select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
+  .modal textarea{resize:vertical;min-height:56px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+  .btn-ghost{background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;color:var(--text);}
+  .modal-hint{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  @media (max-width: 640px){
+    thead{display:none;}
+    tbody tr{display:block;border-bottom:1px solid var(--line);padding:10px 0;}
+    tbody td{display:flex;justify-content:space-between;gap:10px;border:none;padding:4px 14px;}
+    tbody td::before{content:attr(data-label);font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;}
+    .notes-cell{max-width:none;text-align:right;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="dot"></span> Swappool — beheer</div>
+    <div class="wouter-toggle">
+      <span id="wouterStatus" style="font-size:12.5px;opacity:0.85;">Alleen-lezen / rood zetten</span>
+      <button id="wouterBtn" onclick="toggleWouterMode()">Wouter-modus inschakelen</button>
+    </div>
+  </div>
+</div>
+
+<nav class="cattabs">
+  <div class="cattabs-inner" id="catTabs"></div>
+</nav>
+
+<div class="wrap" id="app">
+  <header>
+    <h1 id="pageTitle">— <span>beheer</span></h1>
+    <div class="counts" id="counts"></div>
+  </header>
+
+  <div class="tabs">
+    <button class="active" id="tabPool" onclick="switchTab('pool')">Pool</button>
+    <button id="tabArchive" onclick="switchTab('archive')">Archief (uitgeleverd)</button>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Zoek op type, serienummer of ME-nummer…" oninput="render()">
+    <button class="btn-primary" id="addBtn" onclick="openAddModal()" style="display:none;">+ Nieuw item</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th class="sortable" data-key="Type" onclick="setSort('Type')">Type<span class="arrow"></span></th>
+        <th class="sortable" data-key="Serienummer" onclick="setSort('Serienummer')">Serienummer<span class="arrow"></span></th>
+        <th class="sortable" data-key="MEnummer" onclick="setSort('MEnummer')">ME-nummer<span class="arrow"></span></th>
+        <th class="sortable" id="bouwjaarTh" data-key="Bouwjaar" onclick="setSort('Bouwjaar')" style="display:none;">Bouwjaar<span class="arrow"></span></th>
+        <th class="sortable" data-key="Status" onclick="setSort('Status')">Status<span class="arrow"></span></th>
+        <th id="colExtra">Notitie</th><th>Acties</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="emptyMsg" style="display:none;"></div>
+  <div class="loading" id="loadingMsg" style="display:none;">Laden…</div>
+</div>
+
+<!-- Wouter password modal -->
+<div class="modal-backdrop" id="pwModal">
+  <div class="modal">
+    <h2>Wouter-modus</h2>
+    <label>Wachtwoord</label>
+    <input type="password" id="pwInput" onkeydown="if(event.key==='Enter')submitPassword()">
+    <div class="modal-hint" id="pwErr" style="color:var(--err);"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('pwModal')">Annuleren</button>
+      <button class="btn-primary" onclick="submitPassword()">Inloggen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mark reserved (rood) modal — open voor iedereen -->
+<div class="modal-backdrop" id="reserveModal">
+  <div class="modal">
+    <h2>Scherm in gebruik melden</h2>
+    <label>Ticketnummer / reden</label>
+    <input type="text" id="reserveNote" placeholder="bijv. #48213 of naam klant">
+    <div class="modal-hint">Dit zet het item op "Gereserveerd" zodat collega's zien dat het bezet is.</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('reserveModal')">Annuleren</button>
+      <button class="btn-primary" onclick="submitReserve()">Markeer als gebruikt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add item modal — Wouter only -->
+<div class="modal-backdrop" id="addModal">
+  <div class="modal">
+    <h2>Nieuw item</h2>
+    <label>Type</label>
+    <select id="newModel" onchange="toggleOtherType()"></select>
+    <input type="text" id="newModelOther" placeholder="nieuw type…" style="display:none;margin-top:6px;">
+    <label>Serienummer</label>
+    <input type="text" id="newSn" placeholder="serienummer">
+    <label>ME-nummer</label>
+    <input type="text" id="newMe" placeholder="ME-nummer">
+    <label id="bouwjaarLabel" style="display:none;">Bouwjaar</label>
+    <input type="text" id="newBouwjaar" placeholder="bijv. 2026" style="display:none;">
+    <label>Notitie (optioneel)</label>
+    <textarea id="newNotes" placeholder="conditie, bijzonderheden…"></textarea>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('addModal')">Annuleren</button>
+      <button class="btn-primary" onclick="submitAdd()">Toevoegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deliver item modal — Wouter only -->
+<div class="modal-backdrop" id="deliverModal">
+  <div class="modal">
+    <h2>Markeer als uitgeleverd</h2>
+    <label>Zendesk ticketnummer</label>
+    <input type="text" id="delTicket" placeholder="bijv. #48213">
+    <label>Klant</label>
+    <input type="text" id="delKlant" placeholder="klantnaam">
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('deliverModal')">Annuleren</button>
+      <button class="btn-primary" onclick="submitDeliver()">Bevestigen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Config ───────────────────────────────────────────────
+  const API_URL = 'PLAK_HIER_JE_WEB_APP_URL'; // Apps Script deployment URL
+
+  const CATEGORIES = [
+    { key: 'screens',   title: 'Swapscreens',   hasBouwjaar: true },
+    { key: 'airserver', title: 'AirServer',      hasBouwjaar: false },
+    { key: 'cameras',   title: "Camera's",       hasBouwjaar: false },
+    { key: 'ops',       title: 'OPS / Navigator',hasBouwjaar: false },
+    { key: 'looppanel', title: 'Loop Panel',     hasBouwjaar: false },
+  ];
+
+  const TYPE_OPTIONS = {"screens": ["ETXxx10", "ETXxx20", "ETXxx30", "ETXxx40", "Evolve 1", "Evolve 2", "Evolve Pro", "Evolve Dynamic", "Discover 1", "Discover 2", "Discover 3", "Explore 1", "Explore 2", "Explore 3", "Overig / Legacy"], "airserver": ["AirServer 2", "Power adapter Airserver 3 65 W"], "cameras": ["Agora video soundbar 4K Ultra HD"], "ops": ["Navigator OPS PC NAV-RK", "OPS CL-i5-10210U W10", "OPS CL-i7-10510U W10", "OPS PC AL-i5-1235U Barebone", "OPS PC AL-i5-1235U W11", "OPS PC AL-i7-1255U W11"], "looppanel": ["LoopMeeting room panel"]};
+
+  let activeCat = 'screens';
+  let activeTab = 'pool';
+  let wouterMode = false;
+  let wouterPassword = '';
+  let sortKey = null;
+  let sortDir = 'asc';
+  let pendingReserveId = null;
+  let pendingDeliverId = null;
+
+  // cache per categorie: { pool: [...], archive: [...], loaded: bool }
+  const cache = {};
+  CATEGORIES.forEach(c => cache[c.key] = { pool: [], archive: [], loaded: false });
+
+  function renderCatTabs(){
+    document.getElementById('catTabs').innerHTML = CATEGORIES.map(c =>
+      `<button class="${activeCat === c.key ? 'active' : ''}" onclick="switchCategory('${c.key}')">${c.title}</button>`
+    ).join('');
+  }
+
+  function currentCatMeta(){
+    return CATEGORIES.find(c => c.key === activeCat);
+  }
+
+  async function switchCategory(key){
+    activeCat = key;
+    activeTab = 'pool';
+    sortKey = null;
+    document.getElementById('search').value = '';
+    renderCatTabs();
+    updateHeaderForCat();
+    if(!cache[key].loaded){
+      await loadCategory(key);
+    }
+    render();
+  }
+
+  function updateHeaderForCat(){
+    const meta = currentCatMeta();
+    document.getElementById('pageTitle').innerHTML = `${meta.title} <span>— beheer</span>`;
+    document.getElementById('bouwjaarTh').style.display = meta.hasBouwjaar ? '' : 'none';
+    document.getElementById('bouwjaarLabel').style.display = meta.hasBouwjaar ? 'block' : 'none';
+    document.getElementById('newBouwjaar').style.display = meta.hasBouwjaar ? 'block' : 'none';
+    document.getElementById('addBtn').style.display = (wouterMode && activeTab === 'pool') ? 'inline-block' : 'none';
+  }
+
+  async function loadCategory(key){
+    document.getElementById('loadingMsg').style.display = 'block';
+    document.getElementById('rows').innerHTML = '';
+    try {
+      const [poolRes, archRes] = await Promise.all([
+        fetch(`${API_URL}?action=list&categorie=${key}`).then(r => r.json()),
+        fetch(`${API_URL}?action=archive&categorie=${key}`).then(r => r.json())
+      ]);
+      cache[key].pool = poolRes.ok ? poolRes.items : [];
+      cache[key].archive = archRes.ok ? archRes.items : [];
+      cache[key].loaded = true;
+    } catch(err) {
+      console.error(err);
+    }
+    document.getElementById('loadingMsg').style.display = 'none';
+  }
+
+  async function refreshCurrent(){
+    await loadCategory(activeCat);
+    render();
+  }
+
+  function switchTab(tab){
+    activeTab = tab;
+    document.getElementById('tabPool').classList.toggle('active', tab === 'pool');
+    document.getElementById('tabArchive').classList.toggle('active', tab === 'archive');
+    document.getElementById('colExtra').textContent = tab === 'pool' ? 'Notitie' : 'Ticket / klant';
+    updateHeaderForCat();
+    render();
+  }
+
+  // ── Wouter-modus ───────────────────────────────────────────
+  function toggleWouterMode(){
+    if(wouterMode){
+      wouterMode = false;
+      wouterPassword = '';
+      document.getElementById('wouterBtn').textContent = 'Wouter-modus inschakelen';
+      document.getElementById('wouterBtn').classList.remove('on');
+      document.getElementById('wouterStatus').textContent = 'Alleen-lezen / rood zetten';
+      updateHeaderForCat();
+      render();
+    } else {
+      document.getElementById('pwErr').textContent = '';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwModal').classList.add('open');
+    }
+  }
+
+  function submitPassword(){
+    const val = document.getElementById('pwInput').value;
+    // Wachtwoord wordt pas echt gevalideerd bij de eerstvolgende beheeractie (server-side).
+    wouterPassword = val;
+    wouterMode = true;
+    document.getElementById('wouterBtn').textContent = 'Wouter-modus actief';
+    document.getElementById('wouterBtn').classList.add('on');
+    document.getElementById('wouterStatus').textContent = 'Beheer ontgrendeld';
+    closeModal('pwModal');
+    updateHeaderForCat();
+    render();
+  }
+
+  // ── Rendering ──────────────────────────────────────────────
+  function updateCounts(){
+    const data = cache[activeCat];
+    const beschikbaar = data.pool.filter(s => s.Status === 'Beschikbaar').length;
+    const gereserveerd = data.pool.filter(s => s.Status === 'Gereserveerd').length;
+    document.getElementById('counts').innerHTML = `
+      <span class="count-tag available">${beschikbaar} beschikbaar</span>
+      <span class="count-tag reserved">${gereserveerd} gereserveerd</span>
+      <span class="count-tag delivered">${data.archive.length} uitgeleverd</span>
+    `;
+  }
+
+  function sortValue(item, key){
+    if(key === 'Status' && activeTab === 'archive') return item.UitgeleverdOp || '';
+    const v = item[key];
+    if(v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    return isNaN(n) ? String(v).toLowerCase() : n;
+  }
+
+  function applySort(list){
+    if(!sortKey) return list;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      const av = sortValue(a, sortKey), bv = sortValue(b, sortKey);
+      if(av === null && bv === null) return 0;
+      if(av === null) return 1;
+      if(bv === null) return -1;
+      if(av < bv) return -1 * dir;
+      if(av > bv) return 1 * dir;
+      return 0;
+    });
+  }
+
+  function setSort(key){
+    if(sortKey === key){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+    else { sortKey = key; sortDir = 'asc'; }
+    render();
+  }
+
+  function updateSortHeaders(){
+    document.querySelectorAll('th.sortable').forEach(th => {
+      const key = th.dataset.key;
+      const arrow = th.querySelector('.arrow');
+      if(key === sortKey){
+        th.classList.add('active');
+        arrow.textContent = sortDir === 'asc' ? '▲' : '▼';
+      } else {
+        th.classList.remove('active');
+        arrow.textContent = '';
+      }
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function render(){
+    updateCounts();
+    updateSortHeaders();
+    const meta = currentCatMeta();
+    const q = document.getElementById('search').value.toLowerCase();
+    const isArchive = activeTab === 'archive';
+    const source = isArchive ? cache[activeCat].archive : cache[activeCat].pool;
+    let filtered = source.filter(s =>
+      (s.Type || '').toLowerCase().includes(q) ||
+      (String(s.Serienummer || '')).toLowerCase().includes(q) ||
+      (String(s.MEnummer || '')).toLowerCase().includes(q)
+    );
+    filtered = applySort(filtered);
+
+    const rowsEl = document.getElementById('rows');
+    const emptyEl = document.getElementById('emptyMsg');
+
+    if(filtered.length === 0){
+      rowsEl.innerHTML = '';
+      emptyEl.style.display = 'block';
+      emptyEl.textContent = isArchive ? 'Nog geen items uitgeleverd.' : 'Geen items gevonden.';
+      return;
+    }
+    emptyEl.style.display = 'none';
+
+    rowsEl.innerHTML = filtered.map(s => {
+      const bjCell = meta.hasBouwjaar ? `<td data-label="Bouwjaar">${escapeHtml(s.Bouwjaar || '—')}</td>` : '';
+      if(!isArchive){
+        let actions = '';
+        if(s.Status === 'Beschikbaar'){
+          actions += `<button class="warn-btn" onclick="openReserveModal('${s.ID}')">In gebruik / rood</button>`;
+        }
+        if(wouterMode){
+          if(s.Status === 'Gereserveerd'){
+            actions += `<button onclick="resetAvailable('${s.ID}')">Zet beschikbaar</button>`;
+          }
+          actions += `<button onclick="openDeliverModal('${s.ID}')">Uitleveren</button>`;
+          actions += `<button onclick="deleteItem('${s.ID}')">Verwijderen</button>`;
+        }
+        return `
+        <tr>
+          <td class="id-cell" data-label="ID">${s.ID}</td>
+          <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
+          <td class="sn-cell" data-label="Serienummer">${escapeHtml(s.Serienummer)}</td>
+          <td class="sn-cell" data-label="ME-nummer">${escapeHtml(s.MEnummer)}</td>
+          ${bjCell}
+          <td data-label="Status"><span class="status-pill ${s.Status}">${s.Status}</span></td>
+          <td class="notes-cell" data-label="Notitie">${escapeHtml(s.Notitie || '—')}</td>
+          <td data-label="Acties"><div class="row-actions">${actions}</div></td>
+        </tr>`;
+      } else {
+        return `
+        <tr>
+          <td class="id-cell" data-label="ID">${s.ID}</td>
+          <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
+          <td class="sn-cell" data-label="Serienummer">${escapeHtml(s.Serienummer)}</td>
+          <td class="sn-cell" data-label="ME-nummer">${escapeHtml(s.MEnummer)}</td>
+          ${bjCell}
+          <td data-label="Status"><span class="status-pill Uitgeleverd">${new Date(s.UitgeleverdOp).toLocaleDateString('nl-NL')}</span></td>
+          <td class="notes-cell" data-label="Ticket / klant">${escapeHtml(s.Ticket || '—')} · ${escapeHtml(s.Klant || '—')}</td>
+          <td data-label="Acties"></td>
+        </tr>`;
+      }
+    }).join('');
+  }
+
+  // ── API helpers ──────────────────────────────────────────
+  async function post(body){
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ ...body, categorie: activeCat })
+    });
+    return res.json();
+  }
+
+  function closeModal(id){
+    document.getElementById(id).classList.remove('open');
+  }
+
+  // ── Markeer als gereserveerd (open, geen wachtwoord) ─────
+  function openReserveModal(id){
+    pendingReserveId = id;
+    document.getElementById('reserveNote').value = '';
+    document.getElementById('reserveModal').classList.add('open');
+  }
+  async function submitReserve(){
+    const notitie = document.getElementById('reserveNote').value.trim();
+    await post({ action: 'markReserved', id: pendingReserveId, notitie });
+    closeModal('reserveModal');
+    await refreshCurrent();
+  }
+
+  // ── Wouter-acties ─────────────────────────────────────────
+  async function resetAvailable(id){
+    const res = await post({ action: 'resetAvailable', id, password: wouterPassword });
+    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    await refreshCurrent();
+  }
+
+  async function deleteItem(id){
+    if(!confirm('Item definitief verwijderen?')) return;
+    const res = await post({ action: 'delete', id, password: wouterPassword });
+    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    await refreshCurrent();
+  }
+
+  function openAddModal(){
+    const sel = document.getElementById('newModel');
+    const opts = TYPE_OPTIONS[activeCat] || [];
+    sel.innerHTML = opts.map(t => `<option value="${t}">${t}</option>`).join('')
+      + '<option value="__other__">+ Ander type (nieuw toevoegen)</option>';
+    document.getElementById('newModelOther').style.display = 'none';
+    document.getElementById('newModelOther').value = '';
+    document.getElementById('newSn').value = '';
+    document.getElementById('newMe').value = '';
+    document.getElementById('newBouwjaar').value = '';
+    document.getElementById('newNotes').value = '';
+    document.getElementById('addModal').classList.add('open');
+  }
+  function toggleOtherType(){
+    const isOther = document.getElementById('newModel').value === '__other__';
+    document.getElementById('newModelOther').style.display = isOther ? 'block' : 'none';
+  }
+  async function submitAdd(){
+    const sel = document.getElementById('newModel').value;
+    const type = sel === '__other__' ? document.getElementById('newModelOther').value.trim() : sel;
+    const serienummer = document.getElementById('newSn').value.trim();
+    const menummer = document.getElementById('newMe').value.trim();
+    const bouwjaar = document.getElementById('newBouwjaar').value.trim();
+    const notitie = document.getElementById('newNotes').value.trim();
+    if(!type || !serienummer){ alert('Type en serienummer zijn verplicht.'); return; }
+    const res = await post({ action: 'add', type, serienummer, menummer, bouwjaar, notitie, password: wouterPassword });
+    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    closeModal('addModal');
+    await refreshCurrent();
+  }
+
+  function openDeliverModal(id){
+    pendingDeliverId = id;
+    document.getElementById('delTicket').value = '';
+    document.getElementById('delKlant').value = '';
+    document.getElementById('deliverModal').classList.add('open');
+  }
+  async function submitDeliver(){
+    const ticket = document.getElementById('delTicket').value.trim();
+    const klant = document.getElementById('delKlant').value.trim();
+    const res = await post({ action: 'deliver', id: pendingDeliverId, ticket, klant, password: wouterPassword });
+    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    closeModal('deliverModal');
+    await refreshCurrent();
+  }
+
+  // ── Init ─────────────────────────────────────────────────
+  renderCatTabs();
+  updateHeaderForCat();
+  loadCategory('screens').then(render);
+</script>
+</body>
+</html>
