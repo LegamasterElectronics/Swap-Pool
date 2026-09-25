@@ -69,7 +69,7 @@
   .count-tag.active-filter{border-color:currentColor;}
   .count-tag:hover{filter:brightness(0.96);}
 
-  /* ── Type-filters (bijv. ETXxx10 / ETXxx20 / Evolve Pro …) ─ */
+  /* ── Type-filters (bijv. ETX10 / ETX20 / Evolve Pro …) ─ */
   .type-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
   .type-filters:empty{margin-bottom:0;}
   .type-chip{
@@ -328,7 +328,7 @@
     { key: 'looppanel', title: 'Loop Panel',      hasBouwjaar: false },
   ];
 
-  const TYPE_OPTIONS = {"screens": ["ETXxx10", "ETXxx20", "ETXxx30", "ETXxx40", "Evolve 1", "Evolve 2", "Evolve Pro", "Evolve Dynamic", "Discover 1", "Discover 2", "Discover 3", "Explore 1", "Explore 2", "Explore 3", "Overig / Legacy"], "airserver": ["AirServer 2", "Power adapter Airserver 3 65 W"], "looppanel": ["LoopMeeting room panel"], "cameras": ["Agora video soundbar 4K Ultra HD"], "ops": ["Navigator OPS PC NAV-RK", "OPS CL-i5-10210U W10", "OPS CL-i7-10510U W10", "OPS PC AL-i5-1235U Barebone", "OPS PC AL-i5-1235U W11", "OPS PC AL-i7-1255U W11"]};
+  const TYPE_OPTIONS = {"screens": ["ETX10", "ETX20", "Evolve 1", "Evolve 2", "Evolve Pro", "Evolve Dynamic", "Discover 1", "Discover 2", "Discover 3", "Explore 1", "Explore 2", "Explore 3", "Overig / Legacy"], "airserver": ["AirServer 2", "Power adapter Airserver 3 65 W"], "looppanel": ["LoopMeeting room panel"], "cameras": ["Agora video soundbar 4K Ultra HD"], "ops": ["Navigator OPS PC NAV-RK", "OPS CL-i5-10210U W10", "OPS CL-i7-10510U W10", "OPS PC AL-i5-1235U Barebone", "OPS PC AL-i5-1235U W11", "OPS PC AL-i7-1255U W11"]};
 
   // Voorbeeldmodus: actief buiten github.io, of altijd met ?demo in de URL.
   // Er wordt in deze modus niets naar de echte backend geschreven.
@@ -339,13 +339,13 @@
   const DEMO_SEED = {
     screens: {
       pool: [
-        { ID: 'DEMO-S1', Type: 'ETXxx20', Serienummer: 'ETX752021010019', MEnummer: '1000198503', Bouwjaar: 2021, Status: 'Beschikbaar', Notitie: '' },
+        { ID: 'DEMO-S1', Type: 'ETX20', Serienummer: 'ETX752021010019', MEnummer: '1000198503', Bouwjaar: 2021, Status: 'Beschikbaar', Notitie: '' },
         { ID: 'DEMO-S2', Type: 'Discover 2', Serienummer: 'DIS551024050868066', MEnummer: '1000207073', Bouwjaar: 2024, Status: 'Beschikbaar', Notitie: '' },
         { ID: 'DEMO-S3', Type: 'Evolve Pro', Serienummer: 'EVP860025090086', MEnummer: '1000205870', Bouwjaar: 2025, Status: 'Gereserveerd', Notitie: '#48213', GereserveerdOp: new Date(Date.now() - 2 * 86400000).toISOString() },
         { ID: 'DEMO-S4', Type: 'Overig / Legacy', Serienummer: '046529A130002', MEnummer: '1000195901', Bouwjaar: 2021, Status: 'Gereserveerd', Notitie: 'Porsche voorraad', GereserveerdOp: new Date().toISOString() },
       ],
       archive: [
-        { ID: 'DEMO-S0', Type: 'ETXxx10', Serienummer: 'ETX651019060029', MEnummer: '1000128304', Bouwjaar: 2019, UitgeleverdOp: new Date(Date.now() - 7 * 86400000).toISOString(), Ticket: '#47890', Klant: 'Hogeschool Rotterdam' },
+        { ID: 'DEMO-S0', Type: 'ETX10', Serienummer: 'ETX651019060029', MEnummer: '1000128304', Bouwjaar: 2019, UitgeleverdOp: new Date(Date.now() - 7 * 86400000).toISOString(), Ticket: '#47890', Klant: 'Hogeschool Rotterdam' },
       ]
     },
     airserver: { pool: [
@@ -622,6 +622,18 @@
     if(isNaN(d)) return '—';
     return d.toLocaleDateString('nl-NL');
   }
+  // Leidt de schermmaat (in inch) af uit het serienummer — dit wordt nergens los
+  // opgeslagen, want staat altijd al verwerkt in het serienummer zelf.
+  // bijv. ETX651019060029 -> "65"; DIS551024050868066 -> "55"; 6520PLUS21110020 -> "65"
+  function deriveSize(sn){
+    if(!sn) return '—';
+    const s = String(sn);
+    let m = s.match(/^(?:ETX|EXP|DIS|EVD|EVP)(\d{2})/);
+    if(m) return m[1] + '"';
+    m = s.match(/^(\d{2})\d{2}PLUS/);
+    if(m) return m[1] + '"';
+    return '—';
+  }
   function copyToClipboard(text){
     if(!text) return;
     navigator.clipboard?.writeText(String(text)).then(() => toast('Gekopieerd: ' + text));
@@ -696,7 +708,9 @@
     const meta = currentCatMeta();
     const isArchive = activeTab === 'archive';
     const sortTh = (key, label) => `<th class="sortable" data-key="${key}" onclick="setSort('${key}')">${label}<span class="arrow"></span></th>`;
-    let cells = `<tr><th>ID</th>${sortTh('Type','Type')}${sortTh('Serienummer','Serienummer')}${sortTh('MEnummer','ME-nummer')}`;
+    let cells = `<tr><th>ID</th>${sortTh('Type','Type')}`;
+    if(meta.hasBouwjaar) cells += `<th>Maat</th>`;
+    cells += `${sortTh('Serienummer','Serienummer')}${sortTh('MEnummer','ME-nummer')}`;
     if(meta.hasBouwjaar) cells += sortTh('Bouwjaar', 'Bouwjaar');
     if(!isArchive){
       cells += sortTh('Status','Status') + `<th>Notitie</th><th>Acties</th>`;
@@ -736,7 +750,7 @@
     const rowsEl = document.getElementById('rows');
     const emptyEl = document.getElementById('emptyMsg');
     const errorEl = document.getElementById('errorMsg');
-    const colspan = 6 + (meta.hasBouwjaar ? 1 : 0);
+    const colspan = 6 + (meta.hasBouwjaar ? 2 : 0);
 
     if(data.error){
       rowsEl.innerHTML = '';
@@ -786,6 +800,7 @@
 
     rowsEl.innerHTML = filtered.map(s => {
       const bjCell = meta.hasBouwjaar ? `<td data-label="Bouwjaar">${escapeHtml(s.Bouwjaar || '—')}</td>` : '';
+      const maatCell = meta.hasBouwjaar ? `<td class="mono" data-label="Maat">${escapeHtml(deriveSize(s.Serienummer))}</td>` : '';
       const snCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.Serienummer)}')" title="Klik om te kopiëren">${escapeHtml(s.Serienummer)}</td>`;
       const meCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.MEnummer)}')" title="Klik om te kopiëren">${escapeHtml(s.MEnummer)}</td>`;
 
@@ -811,6 +826,7 @@
         <tr class="${isReserved ? 'row-reserved' : ''}">
           <td class="id-cell" data-label="ID">${s.ID}</td>
           <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
+          ${maatCell}
           ${snCell}
           ${meCell}
           ${bjCell}
@@ -823,6 +839,7 @@
         <tr>
           <td class="id-cell" data-label="ID">${s.ID}</td>
           <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
+          ${maatCell}
           ${snCell}
           ${meCell}
           ${bjCell}
@@ -1008,10 +1025,26 @@
   // ══════════════════════════════════════════════════════════
   // Nieuw / Bewerken — gedeelde dialoog, Beheerder only
   // ══════════════════════════════════════════════════════════
+  // Vaste lijst + eventuele afwijkende typenamen die al in gebruik zijn (bijv. omdat
+  // iemand een Overig/Legacy-item via "Ander type" een eigen naam heeft gegeven).
+  // Zo wordt zo'n naam vanzelf een keuzeoptie voor volgende items, zonder dat de
+  // vaste lijst in de code aangepast hoeft te worden.
+  function effectiveTypeOptions(cat){
+    const base = TYPE_OPTIONS[cat] || [];
+    const inUse = new Set();
+    (cache[cat].pool || []).forEach(s => inUse.add(s.Type));
+    (cache[cat].archive || []).forEach(s => inUse.add(s.Type));
+    const extra = [...inUse].filter(t => t && !base.includes(t));
+    // "Overig / Legacy" (indien aanwezig) blijft onderaan, net-hernoemde types komen ervoor.
+    const legacyIdx = base.indexOf('Overig / Legacy');
+    if(legacyIdx === -1) return [...base, ...extra.sort()];
+    return [...base.slice(0, legacyIdx), ...extra.sort(), ...base.slice(legacyIdx)];
+  }
+
   function openItemDialog(mode, id){
     editingId = mode === 'edit' ? id : null;
     const meta = currentCatMeta();
-    const opts = TYPE_OPTIONS[activeCat] || [];
+    const opts = effectiveTypeOptions(activeCat);
     const sel = document.getElementById('itemType');
     sel.innerHTML = opts.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')
       + '<option value="__other__">+ Ander type</option>';
