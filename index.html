@@ -254,7 +254,7 @@
 
 <script>
   // ── Config ───────────────────────────────────────────────
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxzRAmIlZgdp5P1rPdl2wk0oOsD-7W67F4QvcyVVJyu5PzZqk8in2-IUiEGYvjkxlPN7Q/exec'; // Apps Script deployment URL
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxzRAmIlZgdp5P1rPdl2wk0oOsD-7W67F4QvcyVVJyu5PzZqk8in2-IUiEGYvjkxlPN7Q/exec';
 
   const CATEGORIES = [
     { key: 'screens',   title: 'Swapscreens',   hasBouwjaar: true },
@@ -298,6 +298,8 @@
     renderCatTabs();
     updateHeaderForCat();
     if(!cache[key].loaded){
+      // Zou normaal al klaar moeten staan door loadAllCategories() bij het opstarten —
+      // dit is alleen een vangnet als die aanroep nog niet klaar was.
       await loadCategory(key);
     }
     render();
@@ -312,9 +314,32 @@
     document.getElementById('addBtn').style.display = (wouterMode && activeTab === 'pool') ? 'inline-block' : 'none';
   }
 
+  // ── Eén Apps Script-aanroep die alle categorieën tegelijk ophaalt ─────
+  // Dit gebeurt op de achtergrond zodra de pagina opent, zodat tabwisselen
+  // daarna geen netwerkwachttijd meer heeft (data staat al klaar in cache).
+  async function loadAllCategories(){
+    document.getElementById('loadingMsg').style.display = 'block';
+    try {
+      const keys = CATEGORIES.map(c => c.key).join(',');
+      const res = await fetch(`${API_URL}?action=all&categorie=${keys}`).then(r => r.json());
+      if(res.ok){
+        Object.keys(res.data).forEach(key => {
+          cache[key].pool = res.data[key].pool;
+          cache[key].archive = res.data[key].archive;
+          cache[key].loaded = true;
+        });
+      }
+    } catch(err) {
+      console.error(err);
+    }
+    document.getElementById('loadingMsg').style.display = 'none';
+    render();
+  }
+
+  // Losse fallback voor één categorie (bijv. als loadAllCategories nog niet klaar is
+  // op het moment dat iemand al doorklikt).
   async function loadCategory(key){
     document.getElementById('loadingMsg').style.display = 'block';
-    document.getElementById('rows').innerHTML = '';
     try {
       const [poolRes, archRes] = await Promise.all([
         fetch(`${API_URL}?action=list&categorie=${key}`).then(r => r.json()),
@@ -447,6 +472,12 @@
 
     const rowsEl = document.getElementById('rows');
     const emptyEl = document.getElementById('emptyMsg');
+
+    if(!cache[activeCat].loaded){
+      rowsEl.innerHTML = '';
+      emptyEl.style.display = 'none';
+      return;
+    }
 
     if(filtered.length === 0){
       rowsEl.innerHTML = '';
@@ -660,7 +691,8 @@
   // ── Init ─────────────────────────────────────────────────
   renderCatTabs();
   updateHeaderForCat();
-  loadCategory('screens').then(render);
+  render(); // toont meteen "Laden…" / lege staat voor Screens
+  loadAllCategories(); // haalt alle 5 categorieën in één keer op, ververst zodra klaar
 </script>
 </body>
 </html>
