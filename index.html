@@ -69,6 +69,21 @@
   .count-tag.active-filter{border-color:currentColor;}
   .count-tag:hover{filter:brightness(0.96);}
 
+  /* ── Type-filters (bijv. ETXxx10 / ETXxx20 / Evolve Pro …) ─ */
+  .type-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .type-filters:empty{margin-bottom:0;}
+  .type-chip{
+    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;
+    border:1.5px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-family:inherit;
+  }
+  .type-chip:hover{border-color:var(--navy);color:var(--navy);}
+  .type-chip .n{font-weight:500;opacity:0.75;}
+  .type-chip.active-filter{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .type-chip.active-filter .n{opacity:0.85;}
+  .type-chip.zero{color:#a7aeb8;border-color:#e6e9ec;}
+  .type-chip.zero:hover{border-color:var(--navy);color:var(--navy);}
+  .type-chip.zero.active-filter{color:#fff;border-color:var(--navy);background:var(--navy);}
+
   /* ── Sub-tabs (Pool / Archief) ──────────────────────────── */
   .tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--grey-bg);padding:4px;border-radius:var(--radius);width:fit-content;}
   .tabs button{font-size:13px;font-weight:700;padding:8px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-family:inherit;}
@@ -193,6 +208,8 @@
     <button id="tabArchive" onclick="switchTab('archive')">Archief</button>
   </div>
 
+  <div class="type-filters" id="typeFilters"></div>
+
   <div class="toolbar">
     <input type="text" id="search" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="render()">
     <button class="btn-primary" id="addBtn" onclick="openItemDialog('add')" style="display:none;">+ Nieuw item</button>
@@ -227,9 +244,11 @@
   <div class="modal">
     <h2>Reserveren</h2>
     <div class="modal-item-ref" id="reserveItemRef"></div>
-    <label>Ticketnummer / reden</label>
+    <label>Jouw naam <span style="color:var(--warn);">*</span></label>
+    <input type="text" id="reserveName" placeholder="bijv. Wouter">
+    <label>Ticketnummer / reden (optioneel)</label>
     <input type="text" id="reserveNote" placeholder="bijv. #48213 of naam klant">
-    <div class="modal-hint">Dit zet het item op "Gereserveerd" zodat collega's zien dat het bezet is.</div>
+    <div class="modal-hint">Dit zet het item op "Gereserveerd" zodat collega's zien dat het bezet is en door wie.</div>
     <div class="modal-error" id="reserveErr"></div>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeModal('reserveModal')">Annuleren</button>
@@ -352,6 +371,7 @@
   let sortKey = null;
   let sortDir = 'asc';
   let counterFilter = null; // null | 'Beschikbaar' | 'Gereserveerd'
+  let typeFilter = null; // null | een specifieke Type-waarde
   let isAdmin = false;
   let adminPassword = '';
   let openKebabId = null;
@@ -535,6 +555,7 @@
     activeTab = 'pool';
     sortKey = null;
     counterFilter = null;
+    typeFilter = null;
     document.getElementById('search').value = '';
     render();
   }
@@ -553,6 +574,11 @@
     }
     activeTab = 'pool';
     counterFilter = (counterFilter === status) ? null : status;
+    render();
+  }
+
+  function toggleTypeFilter(type){
+    typeFilter = (typeFilter === type) ? null : type;
     render();
   }
 
@@ -626,6 +652,31 @@
     document.getElementById('addBtn').style.display = (isAdmin && activeTab === 'pool') ? 'inline-block' : 'none';
   }
 
+  function renderTypeFilters(){
+    const el = document.getElementById('typeFilters');
+    if(activeTab !== 'pool'){ el.innerHTML = ''; return; }
+    const data = cache[activeCat];
+    const order = TYPE_OPTIONS[activeCat] || [];
+    const counts = {};
+    data.pool.forEach(s => { counts[s.Type] = (counts[s.Type] || 0) + 1; });
+    // Toon ALLE typen uit de vaste lijst, ook als er nu 0 van zijn — zo zie je
+    // meteen dat een type leeg is i.p.v. dat 'm gewoon niet in het overzicht staat.
+    // Eventuele afwijkende typenamen (bijv. via "Ander type" toegevoegd) komen erachteraan.
+    const all = [...order];
+    Object.keys(counts).forEach(t => { if(!all.includes(t)) all.push(t); });
+
+    if(all.length <= 1){ el.innerHTML = ''; return; }
+
+    el.innerHTML = all.map(t => {
+      const n = counts[t] || 0;
+      return `
+      <button class="type-chip ${typeFilter === t ? 'active-filter' : ''} ${n === 0 ? 'zero' : ''}" onclick="toggleTypeFilter('${escapeHtml(t).replace(/'/g,"\\'")}')">
+        ${escapeHtml(t)} <span class="n">${n}</span>
+      </button>
+    `;
+    }).join('');
+  }
+
   function updateCounts(){
     const data = cache[activeCat];
     const beschikbaar = data.pool.filter(s => s.Status === 'Beschikbaar').length;
@@ -676,6 +727,7 @@
     renderCatTabs();
     updateHeader();
     updateCounts();
+    renderTypeFilters();
     renderThead();
     closeKebab();
 
@@ -707,6 +759,9 @@
     if(!isArchive && counterFilter){
       source = source.filter(s => s.Status === counterFilter);
     }
+    if(!isArchive && typeFilter){
+      source = source.filter(s => s.Type === typeFilter);
+    }
     let filtered = source.filter(s =>
       (s.Type || '').toLowerCase().includes(q) ||
       (String(s.Serienummer || '')).toLowerCase().includes(q) ||
@@ -722,6 +777,7 @@
       emptyEl.style.display = 'block';
       if(isArchive) emptyEl.textContent = 'Nog geen items uitgeleverd.';
       else if(q) emptyEl.textContent = 'Niets gevonden voor deze zoekopdracht.';
+      else if(typeFilter) emptyEl.textContent = `Geen swapschermen beschikbaar van type "${typeFilter}".`;
       else if(counterFilter) emptyEl.textContent = `Geen items met status "${counterFilter}".`;
       else emptyEl.textContent = 'Geen items in de pool. Voeg er een toe.';
       return;
@@ -910,22 +966,28 @@
     if(!item) return;
     pendingReserveId = id;
     document.getElementById('reserveItemRef').innerHTML = itemRefHtml(item);
+    document.getElementById('reserveName').value = '';
     document.getElementById('reserveNote').value = '';
     document.getElementById('reserveErr').textContent = '';
-    openModal('reserveModal', 'reserveNote');
+    openModal('reserveModal', 'reserveName');
   }
   async function submitReserve(){
-    const notitie = document.getElementById('reserveNote').value.trim();
+    const naam = document.getElementById('reserveName').value.trim();
+    const reden = document.getElementById('reserveNote').value.trim();
+    const errEl = document.getElementById('reserveErr');
+    if(!naam){ errEl.textContent = 'Vul je naam in, zodat collega\'s zien wie het heeft gereserveerd.'; return; }
+    errEl.textContent = '';
+    const notitie = reden ? `${naam} — ${reden}` : naam;
     const id = pendingReserveId;
     setBusy('reserveSubmitBtn', true, 'Bezig…', 'Reserveren');
     const res = await apiPost({ action: 'markReserved', categorie: activeCat, id, notitie });
     setBusy('reserveSubmitBtn', false, '', 'Reserveren');
-    if(!res.ok){ document.getElementById('reserveErr').textContent = res.error || 'Actie mislukt.'; return; }
+    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
     const item = findLocal(id);
     if(item){ item.Status = 'Gereserveerd'; item.Notitie = notitie; item.GereserveerdOp = res.gereserveerdOp || new Date().toISOString(); }
     closeModal('reserveModal');
     render();
-    toast(`${item ? item.Type : 'Item'} gereserveerd${notitie ? ' onder ' + notitie : ''}.`);
+    toast(`${item ? item.Type : 'Item'} gereserveerd door ${naam}.`);
   }
 
   async function resetAvailable(id, btnEl){
