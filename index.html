@@ -3,126 +3,177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Swappool — beheer</title>
+<title>Swappool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --navy: #00368e; --accent: #f39325; --accent-dark: #d97e14; --cyan: #19b0e4;
     --paper: #f6f7f9; --line: #d9dee3; --radius: 8px;
     --text: #1c2530; --muted: #64748b;
     --ok: #1a7a45; --ok-bg: #e8f6ee;
-    --warn: #9a6a00; --warn-bg: #fff4d9;
-    --err: #b3261e; --err-bg: #fdecea;
+    --warn: #b3261e; --warn-bg: #fdecea;
     --grey-bg: #eef0f3;
+    --demo: #a15c00; --demo-bg: #fff4d9;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--paper); color: var(--text); font-size: 14px; }
-  .wrap{max-width:1220px;margin:0 auto;padding:0 20px 80px;}
+  body { margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--paper); color: var(--text); font-size: 13px; }
+  .mono { font-family: 'Roboto Mono', ui-monospace, Menlo, monospace; }
+  .wrap{max-width:1280px;margin:0 auto;padding:0 20px 90px;}
+
+  /* ── Demo-mode banner ───────────────────────────────────── */
+  .demo-banner{
+    background:var(--demo-bg);color:var(--demo);text-align:center;font-size:12.5px;font-weight:700;
+    padding:8px 16px;display:none;border-bottom:1px solid #f0d488;
+  }
+  body.demo .demo-banner{display:block;}
 
   /* ── Top bar ────────────────────────────────────────────── */
   .topbar{background:var(--navy);color:#fff;}
-  .topbar-inner{max-width:1220px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+  .topbar-inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;}
   .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);}
-  .wouter-toggle{display:flex;align-items:center;gap:8px;}
-  .wouter-toggle button{
+  .admin-area{display:flex;align-items:center;gap:8px;}
+  .admin-badge{font-size:12px;font-weight:500;opacity:0.9;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.12);}
+  .admin-badge.on{background:var(--accent);opacity:1;font-weight:700;}
+  .admin-area button{
     background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.35);
-    padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;
+    padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;
   }
-  .wouter-toggle button.on{background:var(--accent);border-color:var(--accent);}
-  .wouter-toggle button:hover{opacity:0.9;}
+  .admin-area button:hover{opacity:0.9;}
 
-  /* ── Category tabs (top-level, per pagina in de oude opzet) ─ */
+  /* ── Category tabs ──────────────────────────────────────── */
   .cattabs{background:#fff;border-bottom:1px solid var(--line);}
-  .cattabs-inner{max-width:1220px;margin:0 auto;padding:0 20px;display:flex;gap:2px;flex-wrap:wrap;}
+  .cattabs-inner{max-width:1280px;margin:0 auto;padding:0 20px;display:flex;gap:2px;flex-wrap:wrap;}
   .cattabs button{
-    padding:14px 18px;border:none;background:transparent;font-size:13.5px;font-weight:600;
+    padding:14px 18px;border:none;background:transparent;font-size:13px;font-weight:700;
     color:var(--muted);cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;
   }
+  .cattabs button .n{font-weight:500;color:var(--muted);margin-left:3px;}
   .cattabs button.active{color:var(--navy);border-bottom-color:var(--accent);}
   .cattabs button:hover{color:var(--navy);}
 
   /* ── Header ─────────────────────────────────────────────── */
   header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin:24px 0;border-bottom:1px solid var(--line);padding-bottom:16px;}
   h1{font-size:22px;margin:0;font-weight:700;color:var(--navy);}
-  h1 span{color:var(--muted);font-weight:400;}
   .counts{display:flex;gap:8px;flex-wrap:wrap;}
-  .count-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;padding:5px 12px;border-radius:999px;}
+  .count-tag{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;
+    border:1.5px solid transparent;cursor:pointer;font-family:inherit;background:none;
+  }
+  .count-tag .bullet{width:7px;height:7px;border-radius:50%;background:currentColor;}
   .count-tag.available{color:var(--ok);background:var(--ok-bg);}
   .count-tag.reserved{color:var(--warn);background:var(--warn-bg);}
   .count-tag.delivered{color:var(--muted);background:var(--grey-bg);}
+  .count-tag.active-filter{border-color:currentColor;}
+  .count-tag:hover{filter:brightness(0.96);}
 
   /* ── Sub-tabs (Pool / Archief) ──────────────────────────── */
   .tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--grey-bg);padding:4px;border-radius:var(--radius);width:fit-content;}
-  .tabs button{font-size:13px;font-weight:600;padding:8px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-family:inherit;}
+  .tabs button{font-size:13px;font-weight:700;padding:8px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-family:inherit;}
   .tabs button.active{background:#fff;color:var(--navy);box-shadow:0 1px 2px rgba(0,0,0,.06);}
 
   /* ── Toolbar ────────────────────────────────────────────── */
   .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
-  .toolbar input[type=text]{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;min-width:220px;background:#fff;}
+  .toolbar input[type=text]{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;min-width:260px;background:#fff;}
   .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
   .btn-primary:hover{background:var(--accent-dark);}
+  .btn-primary:disabled{opacity:0.6;cursor:default;}
 
   /* ── Table ──────────────────────────────────────────────── */
-  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
-  thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);font-weight:650;padding:10px 14px;background:var(--grey-bg);border-bottom:1px solid var(--line);}
-  thead th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:#fff;}
+  table{width:100%;border-collapse:collapse;min-width:920px;}
+  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);font-weight:700;padding:10px 14px;background:var(--grey-bg);border-bottom:1px solid var(--line);white-space:nowrap;}
+  thead th.sortable{cursor:pointer;user-select:none;}
   thead th.sortable:hover{color:var(--navy);}
   thead th.sortable .arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:0.5;}
   thead th.sortable.active{color:var(--navy);}
   thead th.sortable.active .arrow{opacity:1;}
-  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;white-space:nowrap;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:rgba(0,54,142,0.02);}
-  .id-cell{font-weight:600;font-size:12px;color:var(--muted);}
-  .sn-cell{font-size:12.5px;color:var(--text);}
-  .model-cell{font-weight:600;}
-  .notes-cell{color:var(--muted);font-size:12px;max-width:200px;}
+  tbody tr.row-reserved{background:#fdf4f3;}
+  tbody tr.row-reserved:hover{background:#fbeae8;}
+  .id-cell{font-weight:500;font-size:12px;color:var(--muted);}
+  .code-cell{font-size:12.5px;color:var(--text);cursor:pointer;border-radius:4px;padding:2px 4px;margin:-2px -4px;}
+  .code-cell:hover{background:var(--grey-bg);}
+  .model-cell{font-weight:700;white-space:normal;min-width:140px;}
+  .notes-cell{color:var(--muted);font-size:12px;max-width:220px;white-space:normal;}
+  .since-note{display:block;font-size:11px;color:var(--warn);margin-top:2px;font-weight:500;}
 
-  .status-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:650;}
+  .status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;}
+  .status-pill .bullet{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
   .status-pill.Beschikbaar{background:var(--ok-bg);color:var(--ok);}
   .status-pill.Gereserveerd{background:var(--warn-bg);color:var(--warn);}
   .status-pill.Uitgeleverd{background:var(--grey-bg);color:var(--muted);}
 
-  .row-actions{display:flex;gap:6px;flex-wrap:wrap;}
-  .row-actions button{font-size:11.5px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;font-weight:600;color:var(--text);}
+  .row-actions{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;position:relative;}
+  .row-actions button{font-size:12px;padding:6px 11px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);white-space:nowrap;}
   .row-actions button:hover{border-color:var(--navy);color:var(--navy);}
-  .row-actions button.warn-btn{border-color:var(--warn-bg);color:var(--warn);}
+  .row-actions button:disabled{opacity:0.6;cursor:default;}
+  .row-actions button.primary-action.reserve{border-color:var(--warn-bg);color:var(--warn);}
+  .row-actions button.primary-action.release{border-color:var(--ok-bg);color:var(--ok);}
+  .kebab-btn{padding:6px 9px !important;font-weight:700;}
+  .kebab-menu{
+    display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid var(--line);
+    border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:5;min-width:140px;overflow:hidden;
+  }
+  .kebab-menu.open{display:block;}
+  .kebab-menu button{width:100%;text-align:left;padding:9px 12px;border:none;background:none;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text);}
+  .kebab-menu button:hover{background:var(--grey-bg);}
+  .kebab-menu button.danger{color:var(--warn);}
 
   .empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
-  .loading{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+  .fetch-error{padding:40px;text-align:center;color:var(--warn);font-size:13px;}
+  .fetch-error button{margin-top:10px;background:var(--warn);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;}
+
+  /* ── Loading skeleton ───────────────────────────────────── */
+  .skel-row td{padding:14px;}
+  .skel-bar{height:12px;border-radius:4px;background:linear-gradient(90deg,#eceff2 25%,#f5f6f8 37%,#eceff2 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;}
+  @keyframes skel{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
 
   /* ── Modal ──────────────────────────────────────────────── */
-  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(28,37,48,0.45);align-items:center;justify-content:center;z-index:10;padding:20px;}
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(28,37,48,0.45);align-items:center;justify-content:center;z-index:20;padding:20px;}
   .modal-backdrop.open{display:flex;}
-  .modal{background:#fff;border-radius:12px;padding:28px;width:100%;max-width:380px;border-top:4px solid var(--accent);}
-  .modal h2{font-size:16px;margin:0 0 16px;font-weight:700;color:var(--navy);}
-  .modal label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin:12px 0 4px;font-weight:600;}
+  .modal{background:#fff;border-radius:12px;padding:26px;width:100%;max-width:400px;border-top:4px solid var(--accent);}
+  .modal h2{font-size:16px;margin:0 0 4px;font-weight:700;color:var(--navy);}
+  .modal.danger-modal{border-top-color:var(--warn);}
+  .modal-item-ref{
+    background:var(--grey-bg);border-radius:8px;padding:10px 12px;margin:12px 0 4px;font-size:12.5px;color:var(--text);
+  }
+  .modal-item-ref .mi-type{font-weight:700;display:block;}
+  .modal-item-ref .mi-sn{color:var(--muted);}
+  .modal label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin:12px 0 4px;font-weight:700;}
   .modal input, .modal textarea, .modal select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
   .modal textarea{resize:vertical;min-height:56px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
-  .btn-ghost{background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;color:var(--text);}
+  .btn-ghost{background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);}
+  .btn-danger{background:var(--warn);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
   .modal-hint{font-size:12px;color:var(--muted);margin-top:4px;}
+  .modal-error{font-size:12.5px;color:var(--warn);margin-top:8px;font-weight:600;min-height:16px;}
 
-  @media (max-width: 640px){
-    thead{display:none;}
-    tbody tr{display:block;border-bottom:1px solid var(--line);padding:10px 0;}
-    tbody td{display:flex;justify-content:space-between;gap:10px;border:none;padding:4px 14px;}
-    tbody td::before{content:attr(data-label);font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;}
-    .notes-cell{max-width:none;text-align:right;}
+  /* ── Toasts ─────────────────────────────────────────────── */
+  .toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:30;align-items:center;}
+  .toast{background:var(--text);color:#fff;padding:10px 18px;border-radius:8px;font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transform:translateY(8px);transition:opacity .18s,transform .18s;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.error-toast{background:var(--warn);}
+
+  @media (max-width: 700px){
+    .table-scroll{border-radius:var(--radius);}
   }
 </style>
 </head>
 <body>
 
+<div class="demo-banner">Voorbeeldmodus — dit is testdata, er wordt niets opgeslagen.</div>
+
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><span class="dot"></span> Swappool — beheer</div>
-    <div class="wouter-toggle">
-      <span id="wouterStatus" style="font-size:12.5px;opacity:0.85;">Alleen-lezen / rood zetten</span>
-      <button id="wouterBtn" onclick="toggleWouterMode()">Wouter-modus inschakelen</button>
+    <div class="brand"><span class="dot"></span> Swappool</div>
+    <div class="admin-area">
+      <span class="admin-badge" id="adminBadge">Alleen bekijken en reserveren</span>
+      <button id="adminBtn" onclick="onAdminButtonClick()">Beheerder inloggen</button>
     </div>
   </div>
 </div>
@@ -133,291 +184,387 @@
 
 <div class="wrap" id="app">
   <header>
-    <h1 id="pageTitle">— <span>beheer</span></h1>
+    <h1 id="pageTitle">—</h1>
     <div class="counts" id="counts"></div>
   </header>
 
   <div class="tabs">
     <button class="active" id="tabPool" onclick="switchTab('pool')">Pool</button>
-    <button id="tabArchive" onclick="switchTab('archive')">Archief (uitgeleverd)</button>
+    <button id="tabArchive" onclick="switchTab('archive')">Archief</button>
   </div>
 
   <div class="toolbar">
-    <input type="text" id="search" placeholder="Zoek op type, serienummer of ME-nummer…" oninput="render()">
-    <button class="btn-primary" id="addBtn" onclick="openAddModal()" style="display:none;">+ Nieuw item</button>
+    <input type="text" id="search" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="render()">
+    <button class="btn-primary" id="addBtn" onclick="openItemDialog('add')" style="display:none;">+ Nieuw item</button>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th class="sortable" data-key="Type" onclick="setSort('Type')">Type<span class="arrow"></span></th>
-        <th class="sortable" data-key="Serienummer" onclick="setSort('Serienummer')">Serienummer<span class="arrow"></span></th>
-        <th class="sortable" data-key="MEnummer" onclick="setSort('MEnummer')">ME-nummer<span class="arrow"></span></th>
-        <th class="sortable" id="bouwjaarTh" data-key="Bouwjaar" onclick="setSort('Bouwjaar')" style="display:none;">Bouwjaar<span class="arrow"></span></th>
-        <th class="sortable" data-key="Status" onclick="setSort('Status')">Status<span class="arrow"></span></th>
-        <th id="colExtra">Notitie</th><th>Acties</th>
-      </tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
+  <div class="table-scroll">
+    <table>
+      <thead id="theadRow"></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
   <div class="empty" id="emptyMsg" style="display:none;"></div>
-  <div class="loading" id="loadingMsg" style="display:none;">Laden…</div>
+  <div class="fetch-error" id="errorMsg" style="display:none;"></div>
 </div>
 
-<!-- Wouter password modal -->
-<div class="modal-backdrop" id="pwModal">
+<!-- Login dialog -->
+<div class="modal-backdrop" id="loginModal">
   <div class="modal">
-    <h2>Wouter-modus</h2>
+    <h2>Beheerder inloggen</h2>
     <label>Wachtwoord</label>
-    <input type="password" id="pwInput" onkeydown="if(event.key==='Enter')submitPassword()">
-    <div class="modal-hint" id="pwErr" style="color:var(--err);"></div>
+    <input type="password" id="loginPw" autocomplete="current-password">
+    <div class="modal-error" id="loginErr"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('pwModal')">Annuleren</button>
-      <button class="btn-primary" onclick="submitPassword()">Inloggen</button>
+      <button class="btn-ghost" onclick="closeModal('loginModal')">Annuleren</button>
+      <button class="btn-primary" id="loginSubmitBtn" onclick="submitLogin()">Inloggen</button>
     </div>
   </div>
 </div>
 
-<!-- Mark reserved (rood) modal — open voor iedereen -->
+<!-- Reserve dialog — open voor iedereen -->
 <div class="modal-backdrop" id="reserveModal">
   <div class="modal">
-    <h2>Scherm in gebruik melden</h2>
+    <h2>Reserveren</h2>
+    <div class="modal-item-ref" id="reserveItemRef"></div>
     <label>Ticketnummer / reden</label>
     <input type="text" id="reserveNote" placeholder="bijv. #48213 of naam klant">
     <div class="modal-hint">Dit zet het item op "Gereserveerd" zodat collega's zien dat het bezet is.</div>
+    <div class="modal-error" id="reserveErr"></div>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeModal('reserveModal')">Annuleren</button>
-      <button class="btn-primary" onclick="submitReserve()">Markeer als gebruikt</button>
+      <button class="btn-primary" id="reserveSubmitBtn" onclick="submitReserve()">Reserveren</button>
     </div>
   </div>
 </div>
 
-<!-- Add item modal — Wouter only -->
-<div class="modal-backdrop" id="addModal">
+<!-- Item dialog — gedeeld tussen Nieuw en Bewerken, Beheerder only -->
+<div class="modal-backdrop" id="itemModal">
   <div class="modal">
-    <h2>Nieuw item</h2>
+    <h2 id="itemModalTitle">Nieuw item</h2>
+    <div class="modal-item-ref" id="itemModalRef" style="display:none;"></div>
     <label>Type</label>
-    <select id="newModel" onchange="toggleOtherType()"></select>
-    <input type="text" id="newModelOther" placeholder="nieuw type…" style="display:none;margin-top:6px;">
+    <select id="itemType" onchange="toggleOtherType()"></select>
+    <input type="text" id="itemTypeOther" placeholder="type…" style="display:none;margin-top:6px;">
     <label>Serienummer</label>
-    <input type="text" id="newSn" placeholder="serienummer">
+    <input type="text" id="itemSn">
     <label>ME-nummer</label>
-    <input type="text" id="newMe" placeholder="ME-nummer">
-    <label id="bouwjaarLabel" style="display:none;">Bouwjaar</label>
-    <input type="text" id="newBouwjaar" placeholder="bijv. 2026" style="display:none;">
-    <label>Notitie (optioneel)</label>
-    <textarea id="newNotes" placeholder="conditie, bijzonderheden…"></textarea>
-    <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('addModal')">Annuleren</button>
-      <button class="btn-primary" onclick="submitAdd()">Toevoegen</button>
-    </div>
-  </div>
-</div>
-
-<!-- Edit item modal — Wouter only -->
-<div class="modal-backdrop" id="editModal">
-  <div class="modal">
-    <h2>Item bewerken</h2>
-    <label>Type</label>
-    <select id="editModel" onchange="toggleOtherTypeEdit()"></select>
-    <input type="text" id="editModelOther" placeholder="type…" style="display:none;margin-top:6px;">
-    <label>Serienummer</label>
-    <input type="text" id="editSn">
-    <label>ME-nummer</label>
-    <input type="text" id="editMe">
-    <label id="editBouwjaarLabel" style="display:none;">Bouwjaar</label>
-    <input type="text" id="editBouwjaar" style="display:none;">
+    <input type="text" id="itemMe">
+    <label id="itemBouwjaarLabel" style="display:none;">Bouwjaar</label>
+    <input type="text" id="itemBouwjaar" placeholder="bijv. 2026" style="display:none;">
     <label>Notitie</label>
-    <textarea id="editNotes"></textarea>
+    <textarea id="itemNotes" placeholder="conditie, bijzonderheden…"></textarea>
+    <div class="modal-error" id="itemErr"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('editModal')">Annuleren</button>
-      <button class="btn-primary" onclick="submitEdit()">Opslaan</button>
+      <button class="btn-ghost" onclick="closeModal('itemModal')">Annuleren</button>
+      <button class="btn-primary" id="itemSubmitBtn" onclick="submitItem()">Opslaan</button>
     </div>
   </div>
 </div>
 
-<!-- Deliver item modal — Wouter only -->
+<!-- Deliver dialog — Beheerder only -->
 <div class="modal-backdrop" id="deliverModal">
   <div class="modal">
-    <h2>Markeer als uitgeleverd</h2>
-    <label>Zendesk ticketnummer</label>
+    <h2>Uitleveren</h2>
+    <div class="modal-item-ref" id="deliverItemRef"></div>
+    <label>Ticketnummer <span style="color:var(--warn);">*</span></label>
     <input type="text" id="delTicket" placeholder="bijv. #48213">
     <label>Klant</label>
     <input type="text" id="delKlant" placeholder="klantnaam">
+    <div class="modal-error" id="deliverErr"></div>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeModal('deliverModal')">Annuleren</button>
-      <button class="btn-primary" onclick="submitDeliver()">Bevestigen</button>
+      <button class="btn-primary" id="deliverSubmitBtn" onclick="submitDeliver()">Bevestigen</button>
     </div>
   </div>
 </div>
 
+<!-- Delete confirmation dialog — Beheerder only -->
+<div class="modal-backdrop" id="deleteModal">
+  <div class="modal danger-modal">
+    <h2>Item verwijderen</h2>
+    <div class="modal-item-ref" id="deleteItemRef"></div>
+    <p style="font-size:13px;margin:14px 0 0;">Weet je het zeker? Dit kan niet ongedaan gemaakt worden.</p>
+    <div class="modal-error" id="deleteErr"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('deleteModal')">Annuleren</button>
+      <button class="btn-danger" id="deleteSubmitBtn" onclick="submitDelete()">Verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
 <script>
-  // ── Config ───────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // Config
+  // ══════════════════════════════════════════════════════════
   const API_URL = 'https://script.google.com/macros/s/AKfycbxzRAmIlZgdp5P1rPdl2wk0oOsD-7W67F4QvcyVVJyu5PzZqk8in2-IUiEGYvjkxlPN7Q/exec';
 
   const CATEGORIES = [
-    { key: 'screens',   title: 'Swapscreens',   hasBouwjaar: true },
-    { key: 'airserver', title: 'AirServer',      hasBouwjaar: false },
-    { key: 'cameras',   title: "Camera's",       hasBouwjaar: false },
-    { key: 'ops',       title: 'OPS / Navigator',hasBouwjaar: false },
-    { key: 'looppanel', title: 'Loop Panel',     hasBouwjaar: false },
+    { key: 'screens',   title: 'Swapscreens',    hasBouwjaar: true },
+    { key: 'airserver', title: 'AirServer',       hasBouwjaar: false },
+    { key: 'cameras',   title: "Camera's",        hasBouwjaar: false },
+    { key: 'ops',       title: 'OPS / Navigator', hasBouwjaar: false },
+    { key: 'looppanel', title: 'Loop Panel',      hasBouwjaar: false },
   ];
 
   const TYPE_OPTIONS = {"screens": ["ETXxx10", "ETXxx20", "ETXxx30", "ETXxx40", "Evolve 1", "Evolve 2", "Evolve Pro", "Evolve Dynamic", "Discover 1", "Discover 2", "Discover 3", "Explore 1", "Explore 2", "Explore 3", "Overig / Legacy"], "airserver": ["AirServer 2", "Power adapter Airserver 3 65 W"], "cameras": ["Agora video soundbar 4K Ultra HD"], "ops": ["Navigator OPS PC NAV-RK", "OPS CL-i5-10210U W10", "OPS CL-i7-10510U W10", "OPS PC AL-i5-1235U Barebone", "OPS PC AL-i5-1235U W11", "OPS PC AL-i7-1255U W11"], "looppanel": ["LoopMeeting room panel"]};
 
+  // Voorbeeldmodus: actief buiten github.io, of altijd met ?demo in de URL.
+  // Er wordt in deze modus niets naar de echte backend geschreven.
+  const DEMO_MODE = !location.hostname.includes('github.io') || new URLSearchParams(location.search).has('demo');
+  if (DEMO_MODE) document.body.classList.add('demo');
+
+  const DEMO_PASSWORD = 'demo';
+  const DEMO_SEED = {
+    screens: {
+      pool: [
+        { ID: 'DEMO-S1', Type: 'ETXxx20', Serienummer: 'ETX752021010019', MEnummer: '1000198503', Bouwjaar: 2021, Status: 'Beschikbaar', Notitie: '' },
+        { ID: 'DEMO-S2', Type: 'Discover 2', Serienummer: 'DIS551024050868066', MEnummer: '1000207073', Bouwjaar: 2024, Status: 'Beschikbaar', Notitie: '' },
+        { ID: 'DEMO-S3', Type: 'Evolve Pro', Serienummer: 'EVP860025090086', MEnummer: '1000205870', Bouwjaar: 2025, Status: 'Gereserveerd', Notitie: '#48213', GereserveerdOp: new Date(Date.now() - 2 * 86400000).toISOString() },
+        { ID: 'DEMO-S4', Type: 'Overig / Legacy', Serienummer: '046529A130002', MEnummer: '1000195901', Bouwjaar: 2021, Status: 'Gereserveerd', Notitie: 'Porsche voorraad', GereserveerdOp: new Date().toISOString() },
+      ],
+      archive: [
+        { ID: 'DEMO-S0', Type: 'ETXxx10', Serienummer: 'ETX651019060029', MEnummer: '1000128304', Bouwjaar: 2019, UitgeleverdOp: new Date(Date.now() - 7 * 86400000).toISOString(), Ticket: '#47890', Klant: 'Hogeschool Rotterdam' },
+      ]
+    },
+    airserver: { pool: [
+      { ID: 'DEMO-A1', Type: 'AirServer 2', Serienummer: 'END9AA030600185', MEnummer: '1000207188', Status: 'Beschikbaar', Notitie: '' },
+    ], archive: [] },
+    cameras: { pool: [
+      { ID: 'DEMO-C1', Type: 'Agora video soundbar 4K Ultra HD', Serienummer: 'JX375200016', MEnummer: '1000202706', Status: 'Beschikbaar', Notitie: '' },
+    ], archive: [] },
+    ops: { pool: [
+      { ID: 'DEMO-O1', Type: 'OPS CL-i5-10210U W10', Serienummer: 'ISCLI5WX23540110', MEnummer: '1000200423', Status: 'Beschikbaar', Notitie: '' },
+      { ID: 'DEMO-O2', Type: 'OPS PC AL-i7-1255U W11', Serienummer: 'ISALI7WX24010022', MEnummer: '1000202801', Status: 'Gereserveerd', Notitie: 'testopstelling', GereserveerdOp: new Date().toISOString() },
+    ], archive: [] },
+    looppanel: { pool: [
+      { ID: 'DEMO-L1', Type: 'LoopMeeting room panel', Serienummer: 'f8:7a:39:76:75:a4', MEnummer: '1000203197', Status: 'Beschikbaar', Notitie: '' },
+    ], archive: [] },
+  };
+
+  // ══════════════════════════════════════════════════════════
+  // State
+  // ══════════════════════════════════════════════════════════
   let activeCat = 'screens';
   let activeTab = 'pool';
-  let wouterMode = false;
-  let wouterPassword = '';
   let sortKey = null;
   let sortDir = 'asc';
+  let counterFilter = null; // null | 'Beschikbaar' | 'Gereserveerd'
+  let isAdmin = false;
+  let adminPassword = '';
+  let openKebabId = null;
+
   let pendingReserveId = null;
   let pendingDeliverId = null;
-  let editingId = null;
+  let pendingDeleteId = null;
+  let editingId = null; // null => "add" dialoog, anders "bewerk" dialoog
 
-  // cache per categorie: { pool: [...], archive: [...], loaded: bool }
   const cache = {};
-  CATEGORIES.forEach(c => cache[c.key] = { pool: [], archive: [], loaded: false });
+  CATEGORIES.forEach(c => cache[c.key] = { pool: [], archive: [], loaded: false, error: null });
 
-  function renderCatTabs(){
-    document.getElementById('catTabs').innerHTML = CATEGORIES.map(c =>
-      `<button class="${activeCat === c.key ? 'active' : ''}" onclick="switchCategory('${c.key}')">${c.title}</button>`
-    ).join('');
+  // Demo-modus gebruikt een losse, muteerbare kopie van de testdata zodat
+  // acties (reserveren, uitleveren, etc.) lokaal effect hebben zonder op te slaan.
+  const demoStore = DEMO_MODE ? JSON.parse(JSON.stringify(DEMO_SEED)) : null;
+
+  // ══════════════════════════════════════════════════════════
+  // Toasts
+  // ══════════════════════════════════════════════════════════
+  function toast(message, isError){
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast' + (isError ? ' error-toast' : '');
+    el.textContent = message;
+    wrap.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 250);
+    }, 3200);
   }
 
-  function currentCatMeta(){
-    return CATEGORIES.find(c => c.key === activeCat);
-  }
-
-  async function switchCategory(key){
-    activeCat = key;
-    activeTab = 'pool';
-    sortKey = null;
-    document.getElementById('search').value = '';
-    renderCatTabs();
-    updateHeaderForCat();
-    if(!cache[key].loaded){
-      // Zou normaal al klaar moeten staan door loadAllCategories() bij het opstarten —
-      // dit is alleen een vangnet als die aanroep nog niet klaar was.
-      await loadCategory(key);
+  // ══════════════════════════════════════════════════════════
+  // API laag — praat met Apps Script, of met de lokale demo-store
+  // ══════════════════════════════════════════════════════════
+  async function apiAll(keys){
+    if(DEMO_MODE){
+      const data = {};
+      keys.forEach(k => { data[k] = { pool: demoStore[k].pool, archive: demoStore[k].archive }; });
+      return { ok: true, data };
     }
-    render();
+    const res = await fetch(`${API_URL}?action=all&categorie=${keys.join(',')}`).then(r => r.json());
+    return res;
   }
 
-  function updateHeaderForCat(){
-    const meta = currentCatMeta();
-    document.getElementById('pageTitle').innerHTML = `${meta.title} <span>— beheer</span>`;
-    document.getElementById('bouwjaarTh').style.display = meta.hasBouwjaar ? '' : 'none';
-    document.getElementById('bouwjaarLabel').style.display = meta.hasBouwjaar ? 'block' : 'none';
-    document.getElementById('newBouwjaar').style.display = meta.hasBouwjaar ? 'block' : 'none';
-    document.getElementById('addBtn').style.display = (wouterMode && activeTab === 'pool') ? 'inline-block' : 'none';
+  async function apiPost(body){
+    if(DEMO_MODE){
+      return demoPost(body);
+    }
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
+    return res.json();
   }
 
-  // ── Eén Apps Script-aanroep die alle categorieën tegelijk ophaalt ─────
-  // Dit gebeurt op de achtergrond zodra de pagina opent, zodat tabwisselen
-  // daarna geen netwerkwachttijd meer heeft (data staat al klaar in cache).
+  function demoFind(cat, id){
+    return demoStore[cat].pool.find(s => s.ID === id);
+  }
+
+  function demoPost(body){
+    const cat = body.categorie;
+    if(body.action === 'auth'){
+      return body.password === DEMO_PASSWORD
+        ? { ok: true }
+        : { ok: false, error: 'Onjuist wachtwoord' };
+    }
+    if(body.action === 'markReserved'){
+      const item = demoFind(cat, body.id);
+      if(!item) return { ok: false, error: 'Item niet gevonden' };
+      item.Status = 'Gereserveerd';
+      item.Notitie = body.notitie || '';
+      item.GereserveerdOp = new Date().toISOString();
+      return { ok: true };
+    }
+    if(body.action === 'resetAvailable'){
+      const item = demoFind(cat, body.id);
+      if(!item) return { ok: false, error: 'Item niet gevonden' };
+      item.Status = 'Beschikbaar';
+      item.GereserveerdOp = '';
+      return { ok: true };
+    }
+    if(body.password !== DEMO_PASSWORD){
+      return { ok: false, error: 'Onjuist wachtwoord' };
+    }
+    if(body.action === 'add'){
+      const id = 'DEMO-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+      demoStore[cat].pool.push({
+        ID: id, Type: body.type, Serienummer: body.serienummer, MEnummer: body.menummer,
+        Bouwjaar: body.bouwjaar || null, Status: 'Beschikbaar', Notitie: body.notitie || ''
+      });
+      return { ok: true, id };
+    }
+    if(body.action === 'delete'){
+      demoStore[cat].pool = demoStore[cat].pool.filter(s => s.ID !== body.id);
+      return { ok: true };
+    }
+    if(body.action === 'deliver'){
+      const idx = demoStore[cat].pool.findIndex(s => s.ID === body.id);
+      if(idx > -1){
+        const [item] = demoStore[cat].pool.splice(idx, 1);
+        item.UitgeleverdOp = new Date().toISOString();
+        item.Ticket = body.ticket || '';
+        item.Klant = body.klant || '';
+        demoStore[cat].archive.unshift(item);
+      }
+      return { ok: true };
+    }
+    if(body.action === 'update'){
+      const item = demoFind(cat, body.id);
+      if(!item) return { ok: false, error: 'Item niet gevonden' };
+      item.Type = body.type; item.Serienummer = body.serienummer; item.MEnummer = body.menummer;
+      item.Bouwjaar = body.bouwjaar || null; item.Notitie = body.notitie || '';
+      return { ok: true };
+    }
+    return { ok: false, error: 'Onbekende actie' };
+  }
+
+  // POST-wrapper voor beheeracties: voegt wachtwoord toe en logt automatisch uit
+  // bij een foutmelding "Onjuist wachtwoord" (bijv. als het wachtwoord server-side
+  // is gewijzigd terwijl deze sessie nog "ingelogd" was).
+  async function adminPost(body){
+    const res = await apiPost({ ...body, categorie: activeCat, password: adminPassword });
+    if(!res.ok && res.error === 'Onjuist wachtwoord'){
+      forceLogout();
+      toast('Wachtwoord onjuist — opnieuw inloggen als beheerder nodig.', true);
+    }
+    return res;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Laden
+  // ══════════════════════════════════════════════════════════
   async function loadAllCategories(){
-    document.getElementById('loadingMsg').style.display = 'block';
+    CATEGORIES.forEach(c => { cache[c.key].error = null; });
+    render();
     try {
-      const keys = CATEGORIES.map(c => c.key).join(',');
-      const res = await fetch(`${API_URL}?action=all&categorie=${keys}`).then(r => r.json());
+      const keys = CATEGORIES.map(c => c.key);
+      const res = await apiAll(keys);
       if(res.ok){
         Object.keys(res.data).forEach(key => {
           cache[key].pool = res.data[key].pool;
           cache[key].archive = res.data[key].archive;
           cache[key].loaded = true;
         });
+      } else {
+        CATEGORIES.forEach(c => { cache[c.key].error = res.error || 'Onbekende fout'; });
       }
     } catch(err) {
       console.error(err);
+      CATEGORIES.forEach(c => { cache[c.key].error = 'Kon geen verbinding maken met de server.'; });
     }
-    document.getElementById('loadingMsg').style.display = 'none';
     render();
   }
 
-  // Losse fallback voor één categorie (bijv. als loadAllCategories nog niet klaar is
-  // op het moment dat iemand al doorklikt).
-  async function loadCategory(key){
-    document.getElementById('loadingMsg').style.display = 'block';
+  async function reloadCurrentCategory(){
+    cache[activeCat].error = null;
+    cache[activeCat].loaded = false;
+    render();
     try {
-      const [poolRes, archRes] = await Promise.all([
-        fetch(`${API_URL}?action=list&categorie=${key}`).then(r => r.json()),
-        fetch(`${API_URL}?action=archive&categorie=${key}`).then(r => r.json())
-      ]);
-      cache[key].pool = poolRes.ok ? poolRes.items : [];
-      cache[key].archive = archRes.ok ? archRes.items : [];
-      cache[key].loaded = true;
+      const res = await apiAll([activeCat]);
+      if(res.ok){
+        cache[activeCat].pool = res.data[activeCat].pool;
+        cache[activeCat].archive = res.data[activeCat].archive;
+        cache[activeCat].loaded = true;
+      } else {
+        cache[activeCat].error = res.error || 'Onbekende fout';
+      }
     } catch(err) {
-      console.error(err);
+      cache[activeCat].error = 'Kon geen verbinding maken met de server.';
     }
-    document.getElementById('loadingMsg').style.display = 'none';
+    render();
   }
 
-  async function refreshCurrent(){
-    await loadCategory(activeCat);
+  function findLocal(id){
+    return cache[activeCat].pool.find(s => s.ID === id);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Navigatie
+  // ══════════════════════════════════════════════════════════
+  function switchCategory(key){
+    activeCat = key;
+    activeTab = 'pool';
+    sortKey = null;
+    counterFilter = null;
+    document.getElementById('search').value = '';
     render();
   }
 
   function switchTab(tab){
     activeTab = tab;
-    document.getElementById('tabPool').classList.toggle('active', tab === 'pool');
-    document.getElementById('tabArchive').classList.toggle('active', tab === 'archive');
-    document.getElementById('colExtra').textContent = tab === 'pool' ? 'Notitie' : 'Ticket / klant';
-    updateHeaderForCat();
+    sortKey = null;
+    if(tab === 'pool') counterFilter = null;
     render();
   }
 
-  // ── Wouter-modus ───────────────────────────────────────────
-  function toggleWouterMode(){
-    if(wouterMode){
-      wouterMode = false;
-      wouterPassword = '';
-      document.getElementById('wouterBtn').textContent = 'Wouter-modus inschakelen';
-      document.getElementById('wouterBtn').classList.remove('on');
-      document.getElementById('wouterStatus').textContent = 'Alleen-lezen / rood zetten';
-      updateHeaderForCat();
-      render();
-    } else {
-      document.getElementById('pwErr').textContent = '';
-      document.getElementById('pwInput').value = '';
-      document.getElementById('pwModal').classList.add('open');
+  function toggleCounterFilter(status){
+    if(status === 'Uitgeleverd'){
+      switchTab('archive');
+      return;
     }
-  }
-
-  function submitPassword(){
-    const val = document.getElementById('pwInput').value;
-    // Wachtwoord wordt pas echt gevalideerd bij de eerstvolgende beheeractie (server-side).
-    wouterPassword = val;
-    wouterMode = true;
-    document.getElementById('wouterBtn').textContent = 'Wouter-modus actief';
-    document.getElementById('wouterBtn').classList.add('on');
-    document.getElementById('wouterStatus').textContent = 'Beheer ontgrendeld';
-    closeModal('pwModal');
-    updateHeaderForCat();
+    activeTab = 'pool';
+    counterFilter = (counterFilter === status) ? null : status;
     render();
   }
 
-  // ── Rendering ──────────────────────────────────────────────
-  function updateCounts(){
-    const data = cache[activeCat];
-    const beschikbaar = data.pool.filter(s => s.Status === 'Beschikbaar').length;
-    const gereserveerd = data.pool.filter(s => s.Status === 'Gereserveerd').length;
-    document.getElementById('counts').innerHTML = `
-      <span class="count-tag available">${beschikbaar} beschikbaar</span>
-      <span class="count-tag reserved">${gereserveerd} gereserveerd</span>
-      <span class="count-tag delivered">${data.archive.length} uitgeleverd</span>
-    `;
-  }
-
+  // ══════════════════════════════════════════════════════════
+  // Sorteren
+  // ══════════════════════════════════════════════════════════
   function sortValue(item, key){
-    if(key === 'Status' && activeTab === 'archive') return item.UitgeleverdOp || '';
     const v = item[key];
     if(v === null || v === undefined || v === '') return null;
     const n = Number(v);
     return isNaN(n) ? String(v).toLowerCase() : n;
   }
-
   function applySort(list){
     if(!sortKey) return list;
     const dir = sortDir === 'asc' ? 1 : -1;
@@ -431,268 +578,528 @@
       return 0;
     });
   }
-
   function setSort(key){
     if(sortKey === key){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
     else { sortKey = key; sortDir = 'asc'; }
     render();
   }
 
-  function updateSortHeaders(){
-    document.querySelectorAll('th.sortable').forEach(th => {
-      const key = th.dataset.key;
-      const arrow = th.querySelector('.arrow');
-      if(key === sortKey){
-        th.classList.add('active');
-        arrow.textContent = sortDir === 'asc' ? '▲' : '▼';
-      } else {
-        th.classList.remove('active');
-        arrow.textContent = '';
-      }
-    });
-  }
-
+  // ══════════════════════════════════════════════════════════
+  // Helpers
+  // ══════════════════════════════════════════════════════════
   function escapeHtml(str){
     return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+  function fmtDate(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    return d.toLocaleDateString('nl-NL');
+  }
+  function copyToClipboard(text){
+    if(!text) return;
+    navigator.clipboard?.writeText(String(text)).then(() => toast('Gekopieerd: ' + text));
+  }
+  function ticketFromNote(note){
+    if(!note) return '';
+    const m = String(note).match(/#?\d{3,}/);
+    return m ? (m[0].startsWith('#') ? m[0] : '#' + m[0]) : '';
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Renderen
+  // ══════════════════════════════════════════════════════════
+  function currentCatMeta(){ return CATEGORIES.find(c => c.key === activeCat); }
+
+  function renderCatTabs(){
+    document.getElementById('catTabs').innerHTML = CATEGORIES.map(c => {
+      const n = cache[c.key].loaded
+        ? cache[c.key].pool.filter(s => s.Status === 'Beschikbaar').length
+        : null;
+      return `<button class="${activeCat === c.key ? 'active' : ''}" onclick="switchCategory('${c.key}')">${c.title}${n !== null ? `<span class="n">(${n})</span>` : ''}</button>`;
+    }).join('');
+  }
+
+  function updateHeader(){
+    const meta = currentCatMeta();
+    document.getElementById('pageTitle').textContent = meta.title;
+    document.getElementById('addBtn').style.display = (isAdmin && activeTab === 'pool') ? 'inline-block' : 'none';
+  }
+
+  function updateCounts(){
+    const data = cache[activeCat];
+    const beschikbaar = data.pool.filter(s => s.Status === 'Beschikbaar').length;
+    const gereserveerd = data.pool.filter(s => s.Status === 'Gereserveerd').length;
+    document.getElementById('counts').innerHTML = `
+      <button class="count-tag available ${counterFilter === 'Beschikbaar' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Beschikbaar')"><span class="bullet"></span>${beschikbaar} beschikbaar</button>
+      <button class="count-tag reserved ${counterFilter === 'Gereserveerd' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Gereserveerd')"><span class="bullet"></span>${gereserveerd} gereserveerd</button>
+      <button class="count-tag delivered" onclick="toggleCounterFilter('Uitgeleverd')"><span class="bullet"></span>${data.archive.length} uitgeleverd</button>
+    `;
+    document.getElementById('tabPool').textContent = `Pool (${data.pool.length})`;
+    document.getElementById('tabArchive').textContent = `Archief (${data.archive.length})`;
+    document.getElementById('tabPool').classList.toggle('active', activeTab === 'pool');
+    document.getElementById('tabArchive').classList.toggle('active', activeTab === 'archive');
+  }
+
+  function renderThead(){
+    const meta = currentCatMeta();
+    const isArchive = activeTab === 'archive';
+    const sortTh = (key, label) => `<th class="sortable" data-key="${key}" onclick="setSort('${key}')">${label}<span class="arrow"></span></th>`;
+    let cells = `<tr><th>ID</th>${sortTh('Type','Type')}${sortTh('Serienummer','Serienummer')}${sortTh('MEnummer','ME-nummer')}`;
+    if(meta.hasBouwjaar) cells += sortTh('Bouwjaar', 'Bouwjaar');
+    if(!isArchive){
+      cells += sortTh('Status','Status') + `<th>Notitie</th><th>Acties</th>`;
+    } else {
+      cells += sortTh('UitgeleverdOp','Uitgeleverd op') + sortTh('Ticket','Ticket') + sortTh('Klant','Klant');
+    }
+    cells += '</tr>';
+    document.getElementById('theadRow').innerHTML = cells;
+    document.querySelectorAll('th.sortable').forEach(th => {
+      const key = th.dataset.key;
+      const arrow = th.querySelector('.arrow');
+      if(key === sortKey){ th.classList.add('active'); arrow.textContent = sortDir === 'asc' ? '▲' : '▼'; }
+      else { th.classList.remove('active'); arrow.textContent = ''; }
+    });
+  }
+
+  function skeletonRows(colspan){
+    let out = '';
+    for(let i = 0; i < 5; i++){
+      out += `<tr class="skel-row">`;
+      for(let j = 0; j < colspan; j++) out += `<td><div class="skel-bar" style="width:${60 + (j*13)%40}%"></div></td>`;
+      out += `</tr>`;
+    }
+    return out;
+  }
 
   function render(){
+    renderCatTabs();
+    updateHeader();
     updateCounts();
-    updateSortHeaders();
-    const meta = currentCatMeta();
-    const q = document.getElementById('search').value.toLowerCase();
-    const isArchive = activeTab === 'archive';
-    const source = isArchive ? cache[activeCat].archive : cache[activeCat].pool;
-    let filtered = source.filter(s =>
-      (s.Type || '').toLowerCase().includes(q) ||
-      (String(s.Serienummer || '')).toLowerCase().includes(q) ||
-      (String(s.MEnummer || '')).toLowerCase().includes(q)
-    );
-    filtered = applySort(filtered);
+    renderThead();
+    closeKebab();
 
+    const meta = currentCatMeta();
+    const data = cache[activeCat];
     const rowsEl = document.getElementById('rows');
     const emptyEl = document.getElementById('emptyMsg');
+    const errorEl = document.getElementById('errorMsg');
+    const colspan = 6 + (meta.hasBouwjaar ? 1 : 0);
 
-    if(!cache[activeCat].loaded){
+    if(data.error){
       rowsEl.innerHTML = '';
+      emptyEl.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorEl.innerHTML = `${escapeHtml(data.error)}<br><button onclick="reloadCurrentCategory()">Opnieuw proberen</button>`;
+      return;
+    }
+    errorEl.style.display = 'none';
+
+    if(!data.loaded){
+      rowsEl.innerHTML = skeletonRows(colspan);
       emptyEl.style.display = 'none';
       return;
     }
 
+    const q = document.getElementById('search').value.toLowerCase();
+    const isArchive = activeTab === 'archive';
+    let source = isArchive ? data.archive : data.pool;
+    if(!isArchive && counterFilter){
+      source = source.filter(s => s.Status === counterFilter);
+    }
+    let filtered = source.filter(s =>
+      (s.Type || '').toLowerCase().includes(q) ||
+      (String(s.Serienummer || '')).toLowerCase().includes(q) ||
+      (String(s.MEnummer || '')).toLowerCase().includes(q) ||
+      (String(s.Notitie || '')).toLowerCase().includes(q) ||
+      (String(s.Ticket || '')).toLowerCase().includes(q) ||
+      (String(s.Klant || '')).toLowerCase().includes(q)
+    );
+    filtered = applySort(filtered);
+
     if(filtered.length === 0){
       rowsEl.innerHTML = '';
       emptyEl.style.display = 'block';
-      emptyEl.textContent = isArchive ? 'Nog geen items uitgeleverd.' : 'Geen items gevonden.';
+      if(isArchive) emptyEl.textContent = 'Nog geen items uitgeleverd.';
+      else if(q) emptyEl.textContent = 'Niets gevonden voor deze zoekopdracht.';
+      else if(counterFilter) emptyEl.textContent = `Geen items met status "${counterFilter}".`;
+      else emptyEl.textContent = 'Geen items in de pool. Voeg er een toe.';
       return;
     }
     emptyEl.style.display = 'none';
 
     rowsEl.innerHTML = filtered.map(s => {
       const bjCell = meta.hasBouwjaar ? `<td data-label="Bouwjaar">${escapeHtml(s.Bouwjaar || '—')}</td>` : '';
+      const snCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.Serienummer)}')" title="Klik om te kopiëren">${escapeHtml(s.Serienummer)}</td>`;
+      const meCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.MEnummer)}')" title="Klik om te kopiëren">${escapeHtml(s.MEnummer)}</td>`;
+
       if(!isArchive){
-        let actions = '';
-        if(s.Status === 'Beschikbaar'){
-          actions += `<button class="warn-btn" onclick="openReserveModal('${s.ID}')">In gebruik / rood</button>`;
-        } else if(s.Status === 'Gereserveerd'){
-          actions += `<button onclick="resetAvailable('${s.ID}')">Zet beschikbaar</button>`;
+        const isReserved = s.Status === 'Gereserveerd';
+        let primaryBtn = isReserved
+          ? `<button class="primary-action release" onclick="resetAvailable('${s.ID}', this)">Vrijgeven</button>`
+          : `<button class="primary-action reserve" onclick="openReserveModal('${s.ID}')">Reserveren</button>`;
+        let adminBtns = '';
+        if(isAdmin){
+          adminBtns = `
+            <button onclick="openDeliverModal('${s.ID}')">Uitleveren</button>
+            <div style="position:relative;display:inline-block;">
+              <button class="kebab-btn" onclick="toggleKebab('${s.ID}', event)">⋯</button>
+              <div class="kebab-menu" id="kebab-${s.ID}">
+                <button onclick="openItemDialog('edit','${s.ID}')">Bewerken</button>
+                <button class="danger" onclick="openDeleteModal('${s.ID}')">Verwijderen</button>
+              </div>
+            </div>`;
         }
-        if(wouterMode){
-          actions += `<button onclick="openEditModal('${s.ID}')">Bewerken</button>`;
-          actions += `<button onclick="openDeliverModal('${s.ID}')">Uitleveren</button>`;
-          actions += `<button onclick="deleteItem('${s.ID}')">Verwijderen</button>`;
-        }
+        const sinceNote = (isReserved && s.GereserveerdOp) ? `<span class="since-note">sinds ${fmtDate(s.GereserveerdOp)}</span>` : '';
         return `
-        <tr>
+        <tr class="${isReserved ? 'row-reserved' : ''}">
           <td class="id-cell" data-label="ID">${s.ID}</td>
           <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
-          <td class="sn-cell" data-label="Serienummer">${escapeHtml(s.Serienummer)}</td>
-          <td class="sn-cell" data-label="ME-nummer">${escapeHtml(s.MEnummer)}</td>
+          ${snCell}
+          ${meCell}
           ${bjCell}
-          <td data-label="Status"><span class="status-pill ${s.Status}">${s.Status}</span></td>
+          <td data-label="Status"><span class="status-pill ${s.Status}"><span class="bullet"></span>${s.Status}</span>${sinceNote}</td>
           <td class="notes-cell" data-label="Notitie">${escapeHtml(s.Notitie || '—')}</td>
-          <td data-label="Acties"><div class="row-actions">${actions}</div></td>
+          <td data-label="Acties"><div class="row-actions">${primaryBtn}${adminBtns}</div></td>
         </tr>`;
       } else {
         return `
         <tr>
           <td class="id-cell" data-label="ID">${s.ID}</td>
           <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
-          <td class="sn-cell" data-label="Serienummer">${escapeHtml(s.Serienummer)}</td>
-          <td class="sn-cell" data-label="ME-nummer">${escapeHtml(s.MEnummer)}</td>
+          ${snCell}
+          ${meCell}
           ${bjCell}
-          <td data-label="Status"><span class="status-pill Uitgeleverd">${new Date(s.UitgeleverdOp).toLocaleDateString('nl-NL')}</span></td>
-          <td class="notes-cell" data-label="Ticket / klant">${escapeHtml(s.Ticket || '—')} · ${escapeHtml(s.Klant || '—')}</td>
-          <td data-label="Acties"></td>
+          <td data-label="Uitgeleverd op">${fmtDate(s.UitgeleverdOp)}</td>
+          <td data-label="Ticket">${escapeHtml(s.Ticket || '—')}</td>
+          <td data-label="Klant">${escapeHtml(s.Klant || '—')}</td>
         </tr>`;
       }
     }).join('');
   }
 
-  // ── API helpers ──────────────────────────────────────────
-  async function post(body){
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ ...body, categorie: activeCat })
-    });
-    return res.json();
+  // ══════════════════════════════════════════════════════════
+  // Kebab-menu
+  // ══════════════════════════════════════════════════════════
+  function toggleKebab(id, ev){
+    ev.stopPropagation();
+    if(openKebabId === id){ closeKebab(); return; }
+    closeKebab();
+    openKebabId = id;
+    const el = document.getElementById('kebab-' + id);
+    if(el) el.classList.add('open');
   }
+  function closeKebab(){
+    if(openKebabId){
+      const el = document.getElementById('kebab-' + openKebabId);
+      if(el) el.classList.remove('open');
+    }
+    openKebabId = null;
+  }
+  document.addEventListener('click', closeKebab);
 
+  // ══════════════════════════════════════════════════════════
+  // Modal-infrastructuur: Esc sluit, klik naast dialoog sluit,
+  // focus op eerste veld, Enter bevestigt (behalve in textarea)
+  // ══════════════════════════════════════════════════════════
+  function openModal(id, focusId){
+    document.getElementById(id).classList.add('open');
+    if(focusId){
+      setTimeout(() => { const el = document.getElementById(focusId); if(el){ el.focus(); el.select?.(); } }, 30);
+    }
+  }
   function closeModal(id){
     document.getElementById(id).classList.remove('open');
+    document.querySelector(`#${id} .modal-error`).textContent = '';
+  }
+  function topOpenModal(){
+    const open = document.querySelectorAll('.modal-backdrop.open');
+    return open.length ? open[open.length - 1] : null;
+  }
+  document.addEventListener('keydown', (ev) => {
+    if(ev.key === 'Escape'){
+      const m = topOpenModal();
+      if(m) closeModal(m.id);
+    }
+    if(ev.key === 'Enter'){
+      const m = topOpenModal();
+      if(m && document.activeElement && document.activeElement.tagName !== 'TEXTAREA'){
+        const btn = m.querySelector('.btn-primary, .btn-danger');
+        if(btn) btn.click();
+      }
+    }
+  });
+  document.querySelectorAll('.modal-backdrop').forEach(bd => {
+    bd.addEventListener('click', (ev) => { if(ev.target === bd) closeModal(bd.id); });
+  });
+
+  function setBusy(btnId, busy, busyLabel, idleLabel){
+    const btn = document.getElementById(btnId);
+    btn.disabled = busy;
+    btn.textContent = busy ? (busyLabel || 'Bezig…') : idleLabel;
   }
 
-  function findLocal(id){
-    return cache[activeCat].pool.find(s => s.ID === id);
+  // ══════════════════════════════════════════════════════════
+  // Beheerder inloggen / uitloggen
+  // ══════════════════════════════════════════════════════════
+  function onAdminButtonClick(){
+    if(isAdmin){ logout(); return; }
+    document.getElementById('loginErr').textContent = '';
+    document.getElementById('loginPw').value = '';
+    openModal('loginModal', 'loginPw');
   }
 
-  // ── Markeer als gereserveerd (open, geen wachtwoord) ─────
+  async function submitLogin(){
+    const pw = document.getElementById('loginPw').value;
+    if(!pw){ document.getElementById('loginErr').textContent = 'Vul een wachtwoord in.'; return; }
+    setBusy('loginSubmitBtn', true, 'Bezig…', 'Inloggen');
+    document.getElementById('loginErr').textContent = '';
+    try {
+      const res = await apiPost({ action: 'auth', categorie: activeCat, password: pw });
+      if(res.ok === true){
+        becomeAdmin(pw);
+        closeModal('loginModal');
+        toast('Ingelogd als beheerder.');
+      } else if(res.ok === false && res.error === 'Onjuist wachtwoord'){
+        document.getElementById('loginErr').textContent = 'Onjuist wachtwoord.';
+      } else {
+        // Server kent 'auth' nog niet (oudere deployment) — accepteren zoals voorheen,
+        // echte validatie gebeurt dan bij de eerstvolgende beheeractie.
+        becomeAdmin(pw);
+        closeModal('loginModal');
+        toast('Ingelogd als beheerder.');
+      }
+    } catch(err){
+      becomeAdmin(pw);
+      closeModal('loginModal');
+      toast('Ingelogd als beheerder.');
+    }
+    setBusy('loginSubmitBtn', false, '', 'Inloggen');
+  }
+
+  function becomeAdmin(pw){
+    isAdmin = true;
+    adminPassword = pw;
+    document.getElementById('adminBtn').textContent = 'Uitloggen';
+    document.getElementById('adminBadge').textContent = 'Beheerder';
+    document.getElementById('adminBadge').classList.add('on');
+    updateHeader();
+    render();
+  }
+  function logout(){
+    isAdmin = false;
+    adminPassword = '';
+    document.getElementById('adminBtn').textContent = 'Beheerder inloggen';
+    document.getElementById('adminBadge').textContent = 'Alleen bekijken en reserveren';
+    document.getElementById('adminBadge').classList.remove('on');
+    updateHeader();
+    render();
+  }
+  function forceLogout(){ logout(); }
+
+  // ══════════════════════════════════════════════════════════
+  // Reserveren (open, geen wachtwoord) / Vrijgeven (open)
+  // ══════════════════════════════════════════════════════════
+  function itemRefHtml(item){
+    const meta = currentCatMeta();
+    return `<span class="mi-type">${escapeHtml(item.Type)}</span><span class="mi-sn">SN: ${escapeHtml(item.Serienummer)} · ME: ${escapeHtml(item.MEnummer)}</span>`;
+  }
+
   function openReserveModal(id){
+    const item = findLocal(id);
+    if(!item) return;
     pendingReserveId = id;
+    document.getElementById('reserveItemRef').innerHTML = itemRefHtml(item);
     document.getElementById('reserveNote').value = '';
-    document.getElementById('reserveModal').classList.add('open');
+    document.getElementById('reserveErr').textContent = '';
+    openModal('reserveModal', 'reserveNote');
   }
   async function submitReserve(){
     const notitie = document.getElementById('reserveNote').value.trim();
     const id = pendingReserveId;
-    const res = await post({ action: 'markReserved', id, notitie });
-    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    setBusy('reserveSubmitBtn', true, 'Bezig…', 'Reserveren');
+    const res = await apiPost({ action: 'markReserved', categorie: activeCat, id, notitie });
+    setBusy('reserveSubmitBtn', false, '', 'Reserveren');
+    if(!res.ok){ document.getElementById('reserveErr').textContent = res.error || 'Actie mislukt.'; return; }
     const item = findLocal(id);
-    if(item){ item.Status = 'Gereserveerd'; item.Notitie = notitie; }
+    if(item){ item.Status = 'Gereserveerd'; item.Notitie = notitie; item.GereserveerdOp = res.gereserveerdOp || new Date().toISOString(); }
     closeModal('reserveModal');
     render();
+    toast(`${item ? item.Type : 'Item'} gereserveerd${notitie ? ' onder ' + notitie : ''}.`);
   }
 
-  // ── Open actie: iedereen mag terugzetten naar beschikbaar ──
-  async function resetAvailable(id){
-    const res = await post({ action: 'resetAvailable', id });
-    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+  async function resetAvailable(id, btnEl){
     const item = findLocal(id);
-    if(item){ item.Status = 'Beschikbaar'; }
+    const orig = btnEl.textContent;
+    btnEl.disabled = true; btnEl.textContent = 'Bezig…';
+    const res = await apiPost({ action: 'resetAvailable', categorie: activeCat, id });
+    if(!res.ok){
+      toast(res.error || 'Actie mislukt.', true);
+      btnEl.disabled = false; btnEl.textContent = orig;
+      return;
+    }
+    if(item){ item.Status = 'Beschikbaar'; item.GereserveerdOp = ''; }
     render();
+    toast(`${item ? item.Type : 'Item'} weer beschikbaar.`);
   }
 
-  // ── Wouter-acties ─────────────────────────────────────────
-  async function deleteItem(id){
-    if(!confirm('Item definitief verwijderen?')) return;
-    const res = await post({ action: 'delete', id, password: wouterPassword });
-    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
-    cache[activeCat].pool = cache[activeCat].pool.filter(s => s.ID !== id);
-    render();
-  }
-
-  function openEditModal(id){
-    const item = findLocal(id);
-    if(!item) return;
-    pendingDeliverId = null;
-    editingId = id;
+  // ══════════════════════════════════════════════════════════
+  // Nieuw / Bewerken — gedeelde dialoog, Beheerder only
+  // ══════════════════════════════════════════════════════════
+  function openItemDialog(mode, id){
+    editingId = mode === 'edit' ? id : null;
     const meta = currentCatMeta();
     const opts = TYPE_OPTIONS[activeCat] || [];
-    const sel = document.getElementById('editModel');
-    sel.innerHTML = opts.map(t => `<option value="${t}">${t}</option>`).join('')
+    const sel = document.getElementById('itemType');
+    sel.innerHTML = opts.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')
       + '<option value="__other__">+ Ander type</option>';
-    if(opts.includes(item.Type)){
-      sel.value = item.Type;
-      document.getElementById('editModelOther').style.display = 'none';
-    } else {
-      sel.value = '__other__';
-      document.getElementById('editModelOther').style.display = 'block';
-      document.getElementById('editModelOther').value = item.Type || '';
-    }
-    document.getElementById('editSn').value = item.Serienummer || '';
-    document.getElementById('editMe').value = item.MEnummer || '';
-    document.getElementById('editBouwjaarLabel').style.display = meta.hasBouwjaar ? 'block' : 'none';
-    document.getElementById('editBouwjaar').style.display = meta.hasBouwjaar ? 'block' : 'none';
-    document.getElementById('editBouwjaar').value = item.Bouwjaar || '';
-    document.getElementById('editNotes').value = item.Notitie || '';
-    document.getElementById('editModal').classList.add('open');
-  }
-  function toggleOtherTypeEdit(){
-    const isOther = document.getElementById('editModel').value === '__other__';
-    document.getElementById('editModelOther').style.display = isOther ? 'block' : 'none';
-  }
-  async function submitEdit(){
-    const sel = document.getElementById('editModel').value;
-    const type = sel === '__other__' ? document.getElementById('editModelOther').value.trim() : sel;
-    const serienummer = document.getElementById('editSn').value.trim();
-    const menummer = document.getElementById('editMe').value.trim();
-    const bouwjaar = document.getElementById('editBouwjaar').value.trim();
-    const notitie = document.getElementById('editNotes').value.trim();
-    if(!type || !serienummer){ alert('Type en serienummer zijn verplicht.'); return; }
-    const res = await post({ action: 'update', id: editingId, type, serienummer, menummer, bouwjaar, notitie, password: wouterPassword });
-    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
-    const item = findLocal(editingId);
-    if(item){
-      item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer;
-      item.Bouwjaar = bouwjaar || null; item.Notitie = notitie;
-    }
-    closeModal('editModal');
-    render();
-  }
+    document.getElementById('itemErr').textContent = '';
+    document.getElementById('itemBouwjaarLabel').style.display = meta.hasBouwjaar ? 'block' : 'none';
+    document.getElementById('itemBouwjaar').style.display = meta.hasBouwjaar ? 'block' : 'none';
 
-  function openAddModal(){
-    const sel = document.getElementById('newModel');
-    const opts = TYPE_OPTIONS[activeCat] || [];
-    sel.innerHTML = opts.map(t => `<option value="${t}">${t}</option>`).join('')
-      + '<option value="__other__">+ Ander type (nieuw toevoegen)</option>';
-    document.getElementById('newModelOther').style.display = 'none';
-    document.getElementById('newModelOther').value = '';
-    document.getElementById('newSn').value = '';
-    document.getElementById('newMe').value = '';
-    document.getElementById('newBouwjaar').value = '';
-    document.getElementById('newNotes').value = '';
-    document.getElementById('addModal').classList.add('open');
+    if(mode === 'edit'){
+      const item = findLocal(id);
+      if(!item) return;
+      document.getElementById('itemModalTitle').textContent = 'Item bewerken';
+      document.getElementById('itemModalRef').style.display = 'block';
+      document.getElementById('itemModalRef').innerHTML = itemRefHtml(item);
+      if(opts.includes(item.Type)){
+        sel.value = item.Type;
+        document.getElementById('itemTypeOther').style.display = 'none';
+      } else {
+        sel.value = '__other__';
+        document.getElementById('itemTypeOther').style.display = 'block';
+        document.getElementById('itemTypeOther').value = item.Type || '';
+      }
+      document.getElementById('itemSn').value = item.Serienummer || '';
+      document.getElementById('itemMe').value = item.MEnummer || '';
+      document.getElementById('itemBouwjaar').value = item.Bouwjaar || '';
+      document.getElementById('itemNotes').value = item.Notitie || '';
+    } else {
+      document.getElementById('itemModalTitle').textContent = 'Nieuw item';
+      document.getElementById('itemModalRef').style.display = 'none';
+      sel.value = opts[0] || '__other__';
+      document.getElementById('itemTypeOther').style.display = 'none';
+      document.getElementById('itemTypeOther').value = '';
+      document.getElementById('itemSn').value = '';
+      document.getElementById('itemMe').value = '';
+      document.getElementById('itemBouwjaar').value = '';
+      document.getElementById('itemNotes').value = '';
+    }
+    openModal('itemModal', 'itemSn');
   }
   function toggleOtherType(){
-    const isOther = document.getElementById('newModel').value === '__other__';
-    document.getElementById('newModelOther').style.display = isOther ? 'block' : 'none';
+    const isOther = document.getElementById('itemType').value === '__other__';
+    document.getElementById('itemTypeOther').style.display = isOther ? 'block' : 'none';
   }
-  async function submitAdd(){
-    const sel = document.getElementById('newModel').value;
-    const type = sel === '__other__' ? document.getElementById('newModelOther').value.trim() : sel;
-    const serienummer = document.getElementById('newSn').value.trim();
-    const menummer = document.getElementById('newMe').value.trim();
-    const bouwjaar = document.getElementById('newBouwjaar').value.trim();
-    const notitie = document.getElementById('newNotes').value.trim();
-    if(!type || !serienummer){ alert('Type en serienummer zijn verplicht.'); return; }
-    const res = await post({ action: 'add', type, serienummer, menummer, bouwjaar, notitie, password: wouterPassword });
-    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
-    cache[activeCat].pool.push({
-      ID: res.id, Type: type, Serienummer: serienummer, MEnummer: menummer,
-      Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie
-    });
-    closeModal('addModal');
+  function isDuplicateSerial(serienummer, excludeId){
+    const sn = serienummer.trim().toLowerCase();
+    const all = [...cache[activeCat].pool, ...cache[activeCat].archive];
+    return all.some(s => s.ID !== excludeId && String(s.Serienummer || '').trim().toLowerCase() === sn);
+  }
+  async function submitItem(){
+    const sel = document.getElementById('itemType').value;
+    const type = sel === '__other__' ? document.getElementById('itemTypeOther').value.trim() : sel;
+    const serienummer = document.getElementById('itemSn').value.trim();
+    const menummer = document.getElementById('itemMe').value.trim();
+    const bouwjaar = document.getElementById('itemBouwjaar').value.trim();
+    const notitie = document.getElementById('itemNotes').value.trim();
+    const errEl = document.getElementById('itemErr');
+    errEl.textContent = '';
+    if(!type || !serienummer){ errEl.textContent = 'Type en serienummer zijn verplicht.'; return; }
+    if(isDuplicateSerial(serienummer, editingId)){ errEl.textContent = 'Dit serienummer staat al in de lijst.'; return; }
+
+    setBusy('itemSubmitBtn', true, 'Bezig…', 'Opslaan');
+    let res;
+    if(editingId){
+      res = await adminPost({ action: 'update', id: editingId, type, serienummer, menummer, bouwjaar, notitie });
+    } else {
+      res = await adminPost({ action: 'add', type, serienummer, menummer, bouwjaar, notitie });
+    }
+    setBusy('itemSubmitBtn', false, '', 'Opslaan');
+    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
+
+    if(editingId){
+      const item = findLocal(editingId);
+      if(item){ item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer; item.Bouwjaar = bouwjaar || null; item.Notitie = notitie; }
+      toast(`${type} bijgewerkt.`);
+    } else {
+      cache[activeCat].pool.push({ ID: res.id, Type: type, Serienummer: serienummer, MEnummer: menummer, Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie });
+      toast(`${type} toegevoegd.`);
+    }
+    closeModal('itemModal');
     render();
   }
 
+  // ══════════════════════════════════════════════════════════
+  // Uitleveren — Beheerder only
+  // ══════════════════════════════════════════════════════════
   function openDeliverModal(id){
+    const item = findLocal(id);
+    if(!item) return;
     pendingDeliverId = id;
-    document.getElementById('delTicket').value = '';
+    document.getElementById('deliverItemRef').innerHTML = itemRefHtml(item);
+    document.getElementById('delTicket').value = ticketFromNote(item.Notitie);
     document.getElementById('delKlant').value = '';
-    document.getElementById('deliverModal').classList.add('open');
+    document.getElementById('deliverErr').textContent = '';
+    openModal('deliverModal', 'delTicket');
   }
   async function submitDeliver(){
     const ticket = document.getElementById('delTicket').value.trim();
     const klant = document.getElementById('delKlant').value.trim();
+    const errEl = document.getElementById('deliverErr');
+    if(!ticket){ errEl.textContent = 'Ticketnummer is verplicht.'; return; }
+    errEl.textContent = '';
     const id = pendingDeliverId;
-    const res = await post({ action: 'deliver', id, ticket, klant, password: wouterPassword });
-    if(!res.ok){ alert(res.error || 'Actie mislukt'); return; }
+    setBusy('deliverSubmitBtn', true, 'Bezig…', 'Bevestigen');
+    const res = await adminPost({ action: 'deliver', id, ticket, klant });
+    setBusy('deliverSubmitBtn', false, '', 'Bevestigen');
+    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
     const idx = cache[activeCat].pool.findIndex(s => s.ID === id);
+    let typeName = 'Item';
     if(idx > -1){
       const [item] = cache[activeCat].pool.splice(idx, 1);
       item.UitgeleverdOp = new Date().toISOString();
       item.Ticket = ticket;
       item.Klant = klant;
       cache[activeCat].archive.unshift(item);
+      typeName = item.Type;
     }
     closeModal('deliverModal');
     render();
+    toast(`${typeName} uitgeleverd onder ${ticket}.`);
   }
 
-  // ── Init ─────────────────────────────────────────────────
-  renderCatTabs();
-  updateHeaderForCat();
-  render(); // toont meteen "Laden…" / lege staat voor Screens
-  loadAllCategories(); // haalt alle 5 categorieën in één keer op, ververst zodra klaar
+  // ══════════════════════════════════════════════════════════
+  // Verwijderen — eigen bevestigingsdialoog, Beheerder only
+  // ══════════════════════════════════════════════════════════
+  function openDeleteModal(id){
+    const item = findLocal(id);
+    if(!item) return;
+    pendingDeleteId = id;
+    document.getElementById('deleteItemRef').innerHTML = itemRefHtml(item);
+    document.getElementById('deleteErr').textContent = '';
+    openModal('deleteModal', null);
+  }
+  async function submitDelete(){
+    const id = pendingDeleteId;
+    const item = findLocal(id);
+    const errEl = document.getElementById('deleteErr');
+    setBusy('deleteSubmitBtn', true, 'Bezig…', 'Verwijderen');
+    const res = await adminPost({ action: 'delete', id });
+    setBusy('deleteSubmitBtn', false, '', 'Verwijderen');
+    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
+    cache[activeCat].pool = cache[activeCat].pool.filter(s => s.ID !== id);
+    closeModal('deleteModal');
+    render();
+    toast(`${item ? item.Type : 'Item'} verwijderd.`);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Init
+  // ══════════════════════════════════════════════════════════
+  render();
+  loadAllCategories();
 </script>
 </body>
 </html>
