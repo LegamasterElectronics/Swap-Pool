@@ -35,6 +35,13 @@
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;}
   .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);}
   .admin-area{display:flex;align-items:center;gap:8px;}
+  .admin-area .lang-switch{display:flex;gap:2px;background:rgba(255,255,255,0.12);border-radius:8px;padding:2px;}
+  .admin-area .lang-switch button{
+    background:transparent;color:rgba(255,255,255,0.75);border:none;
+    padding:5px 9px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .admin-area .lang-switch button.active{background:var(--accent);color:#fff;}
+  .admin-area .lang-switch button:hover{color:#fff;}
   .admin-badge{font-size:12px;font-weight:500;opacity:0.9;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.12);}
   .admin-badge.on{background:var(--accent);opacity:1;font-weight:700;}
   .admin-area button{
@@ -181,12 +188,13 @@
 </head>
 <body>
 
-<div class="demo-banner">Voorbeeldmodus — dit is testdata, er wordt niets opgeslagen.</div>
+<div class="demo-banner" data-i18n="demo_banner">Voorbeeldmodus — dit is testdata, er wordt niets opgeslagen.</div>
 
 <div class="topbar">
   <div class="topbar-inner">
     <div class="brand"><span class="dot"></span> Swappool</div>
     <div class="admin-area">
+      <div class="lang-switch" id="langSwitch"></div>
       <span class="admin-badge" id="adminBadge">Alleen bekijken en reserveren</span>
       <button id="adminBtn" onclick="onAdminButtonClick()">Beheerder inloggen</button>
     </div>
@@ -211,8 +219,8 @@
   <div class="type-filters" id="typeFilters"></div>
 
   <div class="toolbar">
-    <input type="text" id="search" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="render()">
-    <button class="btn-primary" id="addBtn" onclick="openItemDialog('add')" style="display:none;">+ Nieuw item</button>
+    <input type="text" id="search" data-i18n-placeholder="search_placeholder" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="render()">
+    <button class="btn-primary" id="addBtn" onclick="openItemDialog('add')" style="display:none;" data-i18n="add_item_btn">+ Nieuw item</button>
   </div>
 
   <div class="table-scroll">
@@ -228,13 +236,13 @@
 <!-- Login dialog -->
 <div class="modal-backdrop" id="loginModal">
   <div class="modal">
-    <h2>Beheerder inloggen</h2>
-    <label>Wachtwoord</label>
+    <h2 data-i18n="modal_login_title">Beheerder inloggen</h2>
+    <label data-i18n="label_password">Wachtwoord</label>
     <input type="password" id="loginPw" autocomplete="current-password">
     <div class="modal-error" id="loginErr"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('loginModal')">Annuleren</button>
-      <button class="btn-primary" id="loginSubmitBtn" onclick="submitLogin()">Inloggen</button>
+      <button class="btn-ghost" onclick="closeModal('loginModal')" data-i18n="btn_annuleren">Annuleren</button>
+      <button class="btn-primary" id="loginSubmitBtn" onclick="submitLogin()" data-i18n="btn_inloggen">Inloggen</button>
     </div>
   </div>
 </div>
@@ -242,17 +250,17 @@
 <!-- Reserve dialog — open voor iedereen -->
 <div class="modal-backdrop" id="reserveModal">
   <div class="modal">
-    <h2>Reserveren</h2>
+    <h2 data-i18n="modal_reserve_title">Reserveren</h2>
     <div class="modal-item-ref" id="reserveItemRef"></div>
-    <label>Jouw naam <span style="color:var(--warn);">*</span></label>
-    <input type="text" id="reserveName" placeholder="bijv. Wouter">
-    <label>Ticketnummer / reden (optioneel)</label>
-    <input type="text" id="reserveNote" placeholder="bijv. #48213 of naam klant">
-    <div class="modal-hint">Dit zet het item op "Gereserveerd" zodat collega's zien dat het bezet is en door wie.</div>
+    <label><span data-i18n="label_your_name">Jouw naam</span> <span style="color:var(--warn);">*</span></label>
+    <input type="text" id="reserveName" data-i18n-placeholder="placeholder_your_name" placeholder="bijv. Wouter">
+    <label data-i18n="label_ticket_reason_optional">Ticketnummer / reden (optioneel)</label>
+    <input type="text" id="reserveNote" data-i18n-placeholder="placeholder_ticket_reason" placeholder="bijv. #48213 of naam klant">
+    <div class="modal-hint" data-i18n="hint_reserve">Dit zet het item op "Gereserveerd" zodat collega's zien dat het bezet is en door wie.</div>
     <div class="modal-error" id="reserveErr"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('reserveModal')">Annuleren</button>
-      <button class="btn-primary" id="reserveSubmitBtn" onclick="submitReserve()">Reserveren</button>
+      <button class="btn-ghost" onclick="closeModal('reserveModal')" data-i18n="btn_annuleren">Annuleren</button>
+      <button class="btn-primary" id="reserveSubmitBtn" onclick="submitReserve()" data-i18n="btn_reserveren">Reserveren</button>
     </div>
   </div>
 </div>
@@ -262,21 +270,21 @@
   <div class="modal">
     <h2 id="itemModalTitle">Nieuw item</h2>
     <div class="modal-item-ref" id="itemModalRef" style="display:none;"></div>
-    <label>Type</label>
+    <label data-i18n="label_type">Type</label>
     <select id="itemType" onchange="toggleOtherType()"></select>
-    <input type="text" id="itemTypeOther" placeholder="type…" style="display:none;margin-top:6px;">
-    <label>Serienummer</label>
+    <input type="text" id="itemTypeOther" data-i18n-placeholder="placeholder_other_type" placeholder="type…" style="display:none;margin-top:6px;">
+    <label data-i18n="label_serienummer">Serienummer</label>
     <input type="text" id="itemSn">
-    <label>ME-nummer</label>
+    <label data-i18n="label_me">ME-nummer</label>
     <input type="text" id="itemMe">
-    <label id="itemBouwjaarLabel" style="display:none;">Bouwjaar</label>
-    <input type="text" id="itemBouwjaar" placeholder="bijv. 2026" style="display:none;">
-    <label>Notitie</label>
-    <textarea id="itemNotes" placeholder="conditie, bijzonderheden…"></textarea>
+    <label id="itemBouwjaarLabel" style="display:none;" data-i18n="label_bouwjaar">Bouwjaar</label>
+    <input type="text" id="itemBouwjaar" data-i18n-placeholder="placeholder_bouwjaar" placeholder="bijv. 2026" style="display:none;">
+    <label data-i18n="label_notitie">Notitie</label>
+    <textarea id="itemNotes" data-i18n-placeholder="placeholder_notitie" placeholder="conditie, bijzonderheden…"></textarea>
     <div class="modal-error" id="itemErr"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('itemModal')">Annuleren</button>
-      <button class="btn-primary" id="itemSubmitBtn" onclick="submitItem()">Opslaan</button>
+      <button class="btn-ghost" onclick="closeModal('itemModal')" data-i18n="btn_annuleren">Annuleren</button>
+      <button class="btn-primary" id="itemSubmitBtn" onclick="submitItem()" data-i18n="btn_opslaan">Opslaan</button>
     </div>
   </div>
 </div>
@@ -284,16 +292,16 @@
 <!-- Deliver dialog — Beheerder only -->
 <div class="modal-backdrop" id="deliverModal">
   <div class="modal">
-    <h2>Uitleveren</h2>
+    <h2 data-i18n="modal_deliver_title">Uitleveren</h2>
     <div class="modal-item-ref" id="deliverItemRef"></div>
-    <label>Ticketnummer <span style="color:var(--warn);">*</span></label>
-    <input type="text" id="delTicket" placeholder="bijv. #48213">
-    <label>Klant</label>
-    <input type="text" id="delKlant" placeholder="klantnaam">
+    <label><span data-i18n="label_ticket_required">Ticketnummer</span> <span style="color:var(--warn);">*</span></label>
+    <input type="text" id="delTicket" data-i18n-placeholder="placeholder_ticket" placeholder="bijv. #48213">
+    <label data-i18n="label_klant">Klant</label>
+    <input type="text" id="delKlant" data-i18n-placeholder="placeholder_klant" placeholder="klantnaam">
     <div class="modal-error" id="deliverErr"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('deliverModal')">Annuleren</button>
-      <button class="btn-primary" id="deliverSubmitBtn" onclick="submitDeliver()">Bevestigen</button>
+      <button class="btn-ghost" onclick="closeModal('deliverModal')" data-i18n="btn_annuleren">Annuleren</button>
+      <button class="btn-primary" id="deliverSubmitBtn" onclick="submitDeliver()" data-i18n="btn_bevestigen">Bevestigen</button>
     </div>
   </div>
 </div>
@@ -301,13 +309,13 @@
 <!-- Delete confirmation dialog — Beheerder only -->
 <div class="modal-backdrop" id="deleteModal">
   <div class="modal danger-modal">
-    <h2>Item verwijderen</h2>
+    <h2 data-i18n="modal_delete_title">Item verwijderen</h2>
     <div class="modal-item-ref" id="deleteItemRef"></div>
-    <p style="font-size:13px;margin:14px 0 0;">Weet je het zeker? Dit kan niet ongedaan gemaakt worden.</p>
+    <p style="font-size:13px;margin:14px 0 0;" data-i18n="delete_confirm_text">Weet je het zeker? Dit kan niet ongedaan gemaakt worden.</p>
     <div class="modal-error" id="deleteErr"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('deleteModal')">Annuleren</button>
-      <button class="btn-danger" id="deleteSubmitBtn" onclick="submitDelete()">Verwijderen</button>
+      <button class="btn-ghost" onclick="closeModal('deleteModal')" data-i18n="btn_annuleren">Annuleren</button>
+      <button class="btn-danger" id="deleteSubmitBtn" onclick="submitDelete()" data-i18n="btn_verwijderen">Verwijderen</button>
     </div>
   </div>
 </div>
@@ -329,6 +337,259 @@
   ];
 
   const TYPE_OPTIONS = {"screens": ["ETX10", "ETX20", "Evolve 1", "Evolve 2", "Evolve Pro", "Evolve Dynamic", "Discover 1", "Discover 2", "Discover 3", "Explore 1", "Explore 2", "Explore 3", "Overig / Legacy"], "airserver": ["AirServer 2", "Power adapter Airserver 3 65 W"], "looppanel": ["LoopMeeting room panel"], "cameras": ["Agora video soundbar 4K Ultra HD"], "ops": ["Navigator OPS PC NAV-RK", "OPS CL-i5-10210U W10", "OPS CL-i7-10510U W10", "OPS PC AL-i5-1235U Barebone", "OPS PC AL-i5-1235U W11", "OPS PC AL-i7-1255U W11"]};
+
+  // ══════════════════════════════════════════════════════════
+  // Vertalingen — NL / DE / EN / FY
+  // ══════════════════════════════════════════════════════════
+  const LANG = {
+    nl: {
+      demo_banner: 'Voorbeeldmodus — dit is testdata, er wordt niets opgeslagen.',
+      admin_readonly_badge: 'Alleen bekijken en reserveren',
+      admin_badge_on: 'Beheerder',
+      admin_login_btn: 'Beheerder inloggen',
+      admin_logout_btn: 'Uitloggen',
+      search_placeholder: 'Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…',
+      add_item_btn: '+ Nieuw item',
+      tab_pool: 'Pool',
+      tab_archive: 'Archief',
+      th_id: 'ID', th_type: 'Type', th_maat: 'Maat', th_serienummer: 'Serienummer',
+      th_me: 'ME-nummer', th_bouwjaar: 'Bouwjaar', th_status: 'Status', th_notitie: 'Notitie',
+      th_acties: 'Acties', th_uitgeleverd_op: 'Uitgeleverd op', th_ticket: 'Ticket', th_klant: 'Klant',
+      status_Beschikbaar: 'Beschikbaar', status_Gereserveerd: 'Gereserveerd', status_Uitgeleverd: 'Uitgeleverd',
+      count_beschikbaar: '{n} beschikbaar', count_gereserveerd: '{n} gereserveerd', count_uitgeleverd: '{n} uitgeleverd',
+      since_note: 'sinds {date}',
+      btn_reserveren: 'Reserveren', btn_vrijgeven: 'Vrijgeven', btn_uitleveren: 'Uitleveren',
+      btn_bewerken: 'Bewerken', btn_verwijderen: 'Verwijderen', btn_annuleren: 'Annuleren',
+      btn_opslaan: 'Opslaan', btn_bevestigen: 'Bevestigen', btn_inloggen: 'Inloggen',
+      btn_opnieuw_proberen: 'Opnieuw proberen', btn_busy: 'Bezig…',
+      empty_archive: 'Nog geen items uitgeleverd.',
+      empty_archive_type: 'Nog geen items van type "{type}" uitgeleverd.',
+      empty_search: 'Niets gevonden voor deze zoekopdracht.',
+      empty_type: 'Geen swapschermen beschikbaar van type "{type}".',
+      empty_status: 'Geen items met status "{status}".',
+      empty_pool: 'Geen items in de pool. Voeg er een toe.',
+      modal_login_title: 'Beheerder inloggen', label_password: 'Wachtwoord',
+      modal_reserve_title: 'Reserveren', label_your_name: 'Jouw naam',
+      placeholder_your_name: 'bijv. Wouter',
+      label_ticket_reason_optional: 'Ticketnummer / reden (optioneel)',
+      placeholder_ticket_reason: 'bijv. #48213 of naam klant',
+      hint_reserve: 'Dit zet het item op "Gereserveerd" zodat collega\'s zien dat het bezet is en door wie.',
+      modal_item_new_title: 'Nieuw item', modal_item_edit_title: 'Item bewerken',
+      label_type: 'Type', label_serienummer: 'Serienummer', label_me: 'ME-nummer',
+      label_bouwjaar: 'Bouwjaar', placeholder_bouwjaar: 'bijv. 2026',
+      label_notitie: 'Notitie', placeholder_notitie: 'conditie, bijzonderheden…',
+      option_other_type: '+ Ander type', placeholder_other_type: 'type…',
+      modal_deliver_title: 'Uitleveren', label_ticket_required: 'Ticketnummer',
+      placeholder_ticket: 'bijv. #48213', label_klant: 'Klant', placeholder_klant: 'klantnaam',
+      modal_delete_title: 'Item verwijderen',
+      delete_confirm_text: 'Weet je het zeker? Dit kan niet ongedaan gemaakt worden.',
+      err_password_required: 'Vul een wachtwoord in.', err_wrong_password: 'Onjuist wachtwoord.',
+      err_name_required: 'Vul je naam in, zodat collega\'s zien wie het heeft gereserveerd.',
+      err_type_sn_required: 'Type en serienummer zijn verplicht.',
+      err_duplicate_sn: 'Dit serienummer staat al in de lijst.',
+      err_ticket_required: 'Ticketnummer is verplicht.', err_action_failed: 'Actie mislukt.',
+      err_connection: 'Kon geen verbinding maken met de server.', err_unknown: 'Onbekende fout',
+      toast_copied: 'Gekopieerd: {text}', toast_logged_in: 'Ingelogd als beheerder.',
+      toast_wrong_password_logout: 'Wachtwoord onjuist — opnieuw inloggen als beheerder nodig.',
+      toast_reserved: '{type} gereserveerd door {name}.', toast_released: '{type} weer beschikbaar.',
+      toast_updated: '{type} bijgewerkt.', toast_added: '{type} toegevoegd.',
+      toast_delivered: '{type} uitgeleverd onder {ticket}.', toast_deleted: '{type} verwijderd.',
+      item_fallback: 'Item', title_copy: 'Klik om te kopiëren',
+    },
+    de: {
+      demo_banner: 'Testmodus — dies sind Testdaten, es wird nichts gespeichert.',
+      admin_readonly_badge: 'Nur ansehen und reservieren',
+      admin_badge_on: 'Administrator',
+      admin_login_btn: 'Als Administrator anmelden',
+      admin_logout_btn: 'Abmelden',
+      search_placeholder: 'Suche nach Typ, Seriennummer, ME-Nummer, Notiz, Ticket oder Kunde…',
+      add_item_btn: '+ Neuer Artikel',
+      tab_pool: 'Pool', tab_archive: 'Archiv',
+      th_id: 'ID', th_type: 'Typ', th_maat: 'Größe', th_serienummer: 'Seriennummer',
+      th_me: 'ME-Nummer', th_bouwjaar: 'Baujahr', th_status: 'Status', th_notitie: 'Notiz',
+      th_acties: 'Aktionen', th_uitgeleverd_op: 'Ausgeliefert am', th_ticket: 'Ticket', th_klant: 'Kunde',
+      status_Beschikbaar: 'Verfügbar', status_Gereserveerd: 'Reserviert', status_Uitgeleverd: 'Ausgeliefert',
+      count_beschikbaar: '{n} verfügbar', count_gereserveerd: '{n} reserviert', count_uitgeleverd: '{n} ausgeliefert',
+      since_note: 'seit {date}',
+      btn_reserveren: 'Reservieren', btn_vrijgeven: 'Freigeben', btn_uitleveren: 'Ausliefern',
+      btn_bewerken: 'Bearbeiten', btn_verwijderen: 'Löschen', btn_annuleren: 'Abbrechen',
+      btn_opslaan: 'Speichern', btn_bevestigen: 'Bestätigen', btn_inloggen: 'Anmelden',
+      btn_opnieuw_proberen: 'Erneut versuchen', btn_busy: 'Wird ausgeführt…',
+      empty_archive: 'Noch keine Artikel ausgeliefert.',
+      empty_archive_type: 'Noch keine Artikel vom Typ "{type}" ausgeliefert.',
+      empty_search: 'Nichts gefunden für diese Suche.',
+      empty_type: 'Keine Swap-Bildschirme vom Typ "{type}" verfügbar.',
+      empty_status: 'Keine Artikel mit Status "{status}".',
+      empty_pool: 'Keine Artikel im Pool. Füge einen hinzu.',
+      modal_login_title: 'Als Administrator anmelden', label_password: 'Passwort',
+      modal_reserve_title: 'Reservieren', label_your_name: 'Dein Name',
+      placeholder_your_name: 'z. B. Wouter',
+      label_ticket_reason_optional: 'Ticketnummer / Grund (optional)',
+      placeholder_ticket_reason: 'z. B. #48213 oder Kundenname',
+      hint_reserve: 'Dies setzt den Artikel auf "Reserviert", damit Kollegen sehen, dass er belegt ist und von wem.',
+      modal_item_new_title: 'Neuer Artikel', modal_item_edit_title: 'Artikel bearbeiten',
+      label_type: 'Typ', label_serienummer: 'Seriennummer', label_me: 'ME-Nummer',
+      label_bouwjaar: 'Baujahr', placeholder_bouwjaar: 'z. B. 2026',
+      label_notitie: 'Notiz', placeholder_notitie: 'Zustand, Besonderheiten…',
+      option_other_type: '+ Anderer Typ', placeholder_other_type: 'Typ…',
+      modal_deliver_title: 'Ausliefern', label_ticket_required: 'Ticketnummer',
+      placeholder_ticket: 'z. B. #48213', label_klant: 'Kunde', placeholder_klant: 'Kundenname',
+      modal_delete_title: 'Artikel löschen',
+      delete_confirm_text: 'Bist du sicher? Dies kann nicht rückgängig gemacht werden.',
+      err_password_required: 'Bitte ein Passwort eingeben.', err_wrong_password: 'Falsches Passwort.',
+      err_name_required: 'Bitte deinen Namen eingeben, damit Kollegen sehen, wer reserviert hat.',
+      err_type_sn_required: 'Typ und Seriennummer sind erforderlich.',
+      err_duplicate_sn: 'Diese Seriennummer steht bereits in der Liste.',
+      err_ticket_required: 'Ticketnummer ist erforderlich.', err_action_failed: 'Aktion fehlgeschlagen.',
+      err_connection: 'Verbindung zum Server nicht möglich.', err_unknown: 'Unbekannter Fehler',
+      toast_copied: 'Kopiert: {text}', toast_logged_in: 'Als Administrator angemeldet.',
+      toast_wrong_password_logout: 'Falsches Passwort — erneute Anmeldung als Administrator nötig.',
+      toast_reserved: '{type} reserviert von {name}.', toast_released: '{type} wieder verfügbar.',
+      toast_updated: '{type} aktualisiert.', toast_added: '{type} hinzugefügt.',
+      toast_delivered: '{type} ausgeliefert unter {ticket}.', toast_deleted: '{type} gelöscht.',
+      item_fallback: 'Artikel', title_copy: 'Zum Kopieren klicken',
+    },
+    en: {
+      demo_banner: 'Demo mode — this is test data, nothing is saved.',
+      admin_readonly_badge: 'View and reserve only',
+      admin_badge_on: 'Admin',
+      admin_login_btn: 'Admin log in',
+      admin_logout_btn: 'Log out',
+      search_placeholder: 'Search by type, serial number, ME number, note, ticket or customer…',
+      add_item_btn: '+ New item',
+      tab_pool: 'Pool', tab_archive: 'Archive',
+      th_id: 'ID', th_type: 'Type', th_maat: 'Size', th_serienummer: 'Serial number',
+      th_me: 'ME number', th_bouwjaar: 'Build year', th_status: 'Status', th_notitie: 'Note',
+      th_acties: 'Actions', th_uitgeleverd_op: 'Delivered on', th_ticket: 'Ticket', th_klant: 'Customer',
+      status_Beschikbaar: 'Available', status_Gereserveerd: 'Reserved', status_Uitgeleverd: 'Delivered',
+      count_beschikbaar: '{n} available', count_gereserveerd: '{n} reserved', count_uitgeleverd: '{n} delivered',
+      since_note: 'since {date}',
+      btn_reserveren: 'Reserve', btn_vrijgeven: 'Release', btn_uitleveren: 'Deliver',
+      btn_bewerken: 'Edit', btn_verwijderen: 'Delete', btn_annuleren: 'Cancel',
+      btn_opslaan: 'Save', btn_bevestigen: 'Confirm', btn_inloggen: 'Log in',
+      btn_opnieuw_proberen: 'Try again', btn_busy: 'Working…',
+      empty_archive: 'No items delivered yet.',
+      empty_archive_type: 'No items of type "{type}" delivered yet.',
+      empty_search: 'Nothing found for this search.',
+      empty_type: 'No swap screens available of type "{type}".',
+      empty_status: 'No items with status "{status}".',
+      empty_pool: 'No items in the pool. Add one.',
+      modal_login_title: 'Admin log in', label_password: 'Password',
+      modal_reserve_title: 'Reserve', label_your_name: 'Your name',
+      placeholder_your_name: 'e.g. Wouter',
+      label_ticket_reason_optional: 'Ticket number / reason (optional)',
+      placeholder_ticket_reason: 'e.g. #48213 or customer name',
+      hint_reserve: 'This sets the item to "Reserved" so colleagues can see it\'s taken and by whom.',
+      modal_item_new_title: 'New item', modal_item_edit_title: 'Edit item',
+      label_type: 'Type', label_serienummer: 'Serial number', label_me: 'ME number',
+      label_bouwjaar: 'Build year', placeholder_bouwjaar: 'e.g. 2026',
+      label_notitie: 'Note', placeholder_notitie: 'condition, remarks…',
+      option_other_type: '+ Other type', placeholder_other_type: 'type…',
+      modal_deliver_title: 'Deliver', label_ticket_required: 'Ticket number',
+      placeholder_ticket: 'e.g. #48213', label_klant: 'Customer', placeholder_klant: 'customer name',
+      modal_delete_title: 'Delete item',
+      delete_confirm_text: 'Are you sure? This cannot be undone.',
+      err_password_required: 'Please enter a password.', err_wrong_password: 'Incorrect password.',
+      err_name_required: 'Please enter your name, so colleagues can see who reserved it.',
+      err_type_sn_required: 'Type and serial number are required.',
+      err_duplicate_sn: 'This serial number is already in the list.',
+      err_ticket_required: 'Ticket number is required.', err_action_failed: 'Action failed.',
+      err_connection: 'Could not connect to the server.', err_unknown: 'Unknown error',
+      toast_copied: 'Copied: {text}', toast_logged_in: 'Logged in as admin.',
+      toast_wrong_password_logout: 'Incorrect password — please log in as admin again.',
+      toast_reserved: '{type} reserved by {name}.', toast_released: '{type} available again.',
+      toast_updated: '{type} updated.', toast_added: '{type} added.',
+      toast_delivered: '{type} delivered under {ticket}.', toast_deleted: '{type} deleted.',
+      item_fallback: 'Item', title_copy: 'Click to copy',
+    },
+    fy: {
+      demo_banner: 'Foarbyldmodus — dit is testdata, der wurdt neat bewarre.',
+      admin_readonly_badge: 'Allinnich sjen en reservearje',
+      admin_badge_on: 'Behearder',
+      admin_login_btn: 'Behearder ynlogge',
+      admin_logout_btn: 'Útlogge',
+      search_placeholder: 'Sykje op type, searjenûmer, ME-nûmer, notysje, ticket of klant…',
+      add_item_btn: '+ Nij item',
+      tab_pool: 'Pool', tab_archive: 'Argyf',
+      th_id: 'ID', th_type: 'Type', th_maat: 'Maat', th_serienummer: 'Searjenûmer',
+      th_me: 'ME-nûmer', th_bouwjaar: 'Boujier', th_status: 'Steat', th_notitie: 'Notysje',
+      th_acties: 'Aksjes', th_uitgeleverd_op: 'Levere op', th_ticket: 'Ticket', th_klant: 'Klant',
+      status_Beschikbaar: 'Beskikber', status_Gereserveerd: 'Reservearre', status_Uitgeleverd: 'Levere',
+      count_beschikbaar: '{n} beskikber', count_gereserveerd: '{n} reservearre', count_uitgeleverd: '{n} levere',
+      since_note: 'sûnt {date}',
+      btn_reserveren: 'Reservearje', btn_vrijgeven: 'Frijjaan', btn_uitleveren: 'Leverje',
+      btn_bewerken: 'Bewurkje', btn_verwijderen: 'Wiskje', btn_annuleren: 'Annulearje',
+      btn_opslaan: 'Bewarje', btn_bevestigen: 'Befêstigje', btn_inloggen: 'Ynlogge',
+      btn_opnieuw_proberen: 'Nochris probearje', btn_busy: 'Dwaande…',
+      empty_archive: 'Noch gjin items levere.',
+      empty_archive_type: 'Noch gjin items fan type "{type}" levere.',
+      empty_search: 'Neat fûn foar dizze sykopdracht.',
+      empty_type: 'Gjin swapskermen beskikber fan type "{type}".',
+      empty_status: 'Gjin items mei steat "{status}".',
+      empty_pool: 'Gjin items yn de pool. Foegje der ien ta.',
+      modal_login_title: 'Behearder ynlogge', label_password: 'Wachtwurd',
+      modal_reserve_title: 'Reservearje', label_your_name: 'Dyn namme',
+      placeholder_your_name: 'bgl. Wouter',
+      label_ticket_reason_optional: 'Ticketnûmer / reden (opsjoneel)',
+      placeholder_ticket_reason: 'bgl. #48213 of namme klant',
+      hint_reserve: 'Dit set it item op "Reservearre" sadat kollega\'s sjogge dat it beset is en troch wa.',
+      modal_item_new_title: 'Nij item', modal_item_edit_title: 'Item bewurkje',
+      label_type: 'Type', label_serienummer: 'Searjenûmer', label_me: 'ME-nûmer',
+      label_bouwjaar: 'Boujier', placeholder_bouwjaar: 'bgl. 2026',
+      label_notitie: 'Notysje', placeholder_notitie: 'steat, bysûnderheden…',
+      option_other_type: '+ Oar type', placeholder_other_type: 'type…',
+      modal_deliver_title: 'Leverje', label_ticket_required: 'Ticketnûmer',
+      placeholder_ticket: 'bgl. #48213', label_klant: 'Klant', placeholder_klant: 'namme klant',
+      modal_delete_title: 'Item wiskje',
+      delete_confirm_text: 'Bisto der wis fan? Dit kin net ûngedien makke wurde.',
+      err_password_required: 'Folje in wachtwurd yn.', err_wrong_password: 'Ferkeard wachtwurd.',
+      err_name_required: 'Folje dyn namme yn, sadat kollega\'s sjogge wa\'t reservearre hat.',
+      err_type_sn_required: 'Type en searjenûmer binne ferplichte.',
+      err_duplicate_sn: 'Dit searjenûmer stiet al yn de list.',
+      err_ticket_required: 'Ticketnûmer is ferplicht.', err_action_failed: 'Aksje mislearre.',
+      err_connection: 'Koe gjin ferbining meitsje mei de server.', err_unknown: 'Unbekende flater',
+      toast_copied: 'Kopiearre: {text}', toast_logged_in: 'Ynlogd as behearder.',
+      toast_wrong_password_logout: 'Ferkeard wachtwurd — opnij ynlogge as behearder nedich.',
+      toast_reserved: '{type} reservearre troch {name}.', toast_released: '{type} wer beskikber.',
+      toast_updated: '{type} bywurke.', toast_added: '{type} tafoege.',
+      toast_delivered: '{type} levere ûnder {ticket}.', toast_deleted: '{type} wiske.',
+      item_fallback: 'Item', title_copy: 'Klik om te kopiearjen',
+    },
+  };
+
+  const LANG_NAMES = { nl: 'NL', de: 'DE', en: 'EN', fy: 'FY' };
+  let currentLang = localStorage.getItem('swappool_lang') || 'nl';
+  if(!LANG[currentLang]) currentLang = 'nl';
+
+  function t(key, vars){
+    let str = (LANG[currentLang] && LANG[currentLang][key]) || (LANG.nl[key]) || key;
+    if(vars){
+      Object.keys(vars).forEach(k => { str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]); });
+    }
+    return str;
+  }
+
+  function renderLangSwitch(){
+    document.getElementById('langSwitch').innerHTML = Object.keys(LANG_NAMES).map(code =>
+      `<button class="${currentLang === code ? 'active' : ''}" onclick="setLanguage('${code}')">${LANG_NAMES[code]}</button>`
+    ).join('');
+  }
+
+  function applyStaticTranslations(){
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.getElementById('adminBadge').textContent = isAdmin ? t('admin_badge_on') : t('admin_readonly_badge');
+    document.getElementById('adminBtn').textContent = isAdmin ? t('admin_logout_btn') : t('admin_login_btn');
+  }
+
+  function setLanguage(code){
+    if(!LANG[code]) return;
+    currentLang = code;
+    localStorage.setItem('swappool_lang', code);
+    renderLangSwitch();
+    applyStaticTranslations();
+    render();
+  }
 
   // Voorbeeldmodus: actief buiten github.io, of altijd met ?demo in de URL.
   // Er wordt in deze modus niets naar de echte backend geschreven.
@@ -494,7 +755,7 @@
     const res = await apiPost({ ...body, categorie: activeCat, password: adminPassword });
     if(!res.ok && res.error === 'Onjuist wachtwoord'){
       forceLogout();
-      toast('Wachtwoord onjuist — opnieuw inloggen als beheerder nodig.', true);
+      toast(t('toast_wrong_password_logout'), true);
     }
     return res;
   }
@@ -636,7 +897,7 @@
   }
   function copyToClipboard(text){
     if(!text) return;
-    navigator.clipboard?.writeText(String(text)).then(() => toast('Gekopieerd: ' + text));
+    navigator.clipboard?.writeText(String(text)).then(() => toast(t('toast_copied', {text})));
   }
   function ticketFromNote(note){
     if(!note) return '';
@@ -691,15 +952,17 @@
 
   function updateCounts(){
     const data = cache[activeCat];
-    const beschikbaar = data.pool.filter(s => s.Status === 'Beschikbaar').length;
-    const gereserveerd = data.pool.filter(s => s.Status === 'Gereserveerd').length;
+    const poolScoped = typeFilter ? data.pool.filter(s => s.Type === typeFilter) : data.pool;
+    const archiveScoped = typeFilter ? data.archive.filter(s => s.Type === typeFilter) : data.archive;
+    const beschikbaar = poolScoped.filter(s => s.Status === 'Beschikbaar').length;
+    const gereserveerd = poolScoped.filter(s => s.Status === 'Gereserveerd').length;
     document.getElementById('counts').innerHTML = `
-      <button class="count-tag available ${counterFilter === 'Beschikbaar' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Beschikbaar')"><span class="bullet"></span>${beschikbaar} beschikbaar</button>
-      <button class="count-tag reserved ${counterFilter === 'Gereserveerd' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Gereserveerd')"><span class="bullet"></span>${gereserveerd} gereserveerd</button>
-      <button class="count-tag delivered" onclick="toggleCounterFilter('Uitgeleverd')"><span class="bullet"></span>${data.archive.length} uitgeleverd</button>
+      <button class="count-tag available ${counterFilter === 'Beschikbaar' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Beschikbaar')"><span class="bullet"></span>${t('count_beschikbaar', {n: beschikbaar})}</button>
+      <button class="count-tag reserved ${counterFilter === 'Gereserveerd' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Gereserveerd')"><span class="bullet"></span>${t('count_gereserveerd', {n: gereserveerd})}</button>
+      <button class="count-tag delivered" onclick="toggleCounterFilter('Uitgeleverd')"><span class="bullet"></span>${t('count_uitgeleverd', {n: archiveScoped.length})}</button>
     `;
-    document.getElementById('tabPool').textContent = `Pool (${data.pool.length})`;
-    document.getElementById('tabArchive').textContent = `Archief (${data.archive.length})`;
+    document.getElementById('tabPool').textContent = `${t('tab_pool')} (${poolScoped.length})`;
+    document.getElementById('tabArchive').textContent = `${t('tab_archive')} (${archiveScoped.length})`;
     document.getElementById('tabPool').classList.toggle('active', activeTab === 'pool');
     document.getElementById('tabArchive').classList.toggle('active', activeTab === 'archive');
   }
@@ -708,14 +971,14 @@
     const meta = currentCatMeta();
     const isArchive = activeTab === 'archive';
     const sortTh = (key, label) => `<th class="sortable" data-key="${key}" onclick="setSort('${key}')">${label}<span class="arrow"></span></th>`;
-    let cells = `<tr><th>ID</th>${sortTh('Type','Type')}`;
-    if(meta.hasBouwjaar) cells += `<th>Maat</th>`;
-    cells += `${sortTh('Serienummer','Serienummer')}${sortTh('MEnummer','ME-nummer')}`;
-    if(meta.hasBouwjaar) cells += sortTh('Bouwjaar', 'Bouwjaar');
+    let cells = `<tr><th>${t('th_id')}</th>${sortTh('Type', t('th_type'))}`;
+    if(meta.hasBouwjaar) cells += `<th>${t('th_maat')}</th>`;
+    cells += `${sortTh('Serienummer', t('th_serienummer'))}${sortTh('MEnummer', t('th_me'))}`;
+    if(meta.hasBouwjaar) cells += sortTh('Bouwjaar', t('th_bouwjaar'));
     if(!isArchive){
-      cells += sortTh('Status','Status') + `<th>Notitie</th><th>Acties</th>`;
+      cells += sortTh('Status', t('th_status')) + `<th>${t('th_notitie')}</th><th>${t('th_acties')}</th>`;
     } else {
-      cells += sortTh('UitgeleverdOp','Uitgeleverd op') + sortTh('Ticket','Ticket') + sortTh('Klant','Klant');
+      cells += sortTh('UitgeleverdOp', t('th_uitgeleverd_op')) + sortTh('Ticket', t('th_ticket')) + sortTh('Klant', t('th_klant'));
     }
     cells += '</tr>';
     document.getElementById('theadRow').innerHTML = cells;
@@ -756,7 +1019,7 @@
       rowsEl.innerHTML = '';
       emptyEl.style.display = 'none';
       errorEl.style.display = 'block';
-      errorEl.innerHTML = `${escapeHtml(data.error)}<br><button onclick="reloadCurrentCategory()">Opnieuw proberen</button>`;
+      errorEl.innerHTML = `${escapeHtml(data.error)}<br><button onclick="reloadCurrentCategory()">${t('btn_opnieuw_proberen')}</button>`;
       return;
     }
     errorEl.style.display = 'none';
@@ -773,7 +1036,7 @@
     if(!isArchive && counterFilter){
       source = source.filter(s => s.Status === counterFilter);
     }
-    if(!isArchive && typeFilter){
+    if(typeFilter){
       source = source.filter(s => s.Type === typeFilter);
     }
     let filtered = source.filter(s =>
@@ -789,63 +1052,64 @@
     if(filtered.length === 0){
       rowsEl.innerHTML = '';
       emptyEl.style.display = 'block';
-      if(isArchive) emptyEl.textContent = 'Nog geen items uitgeleverd.';
-      else if(q) emptyEl.textContent = 'Niets gevonden voor deze zoekopdracht.';
-      else if(typeFilter) emptyEl.textContent = `Geen swapschermen beschikbaar van type "${typeFilter}".`;
-      else if(counterFilter) emptyEl.textContent = `Geen items met status "${counterFilter}".`;
-      else emptyEl.textContent = 'Geen items in de pool. Voeg er een toe.';
+      if(isArchive && typeFilter) emptyEl.textContent = t('empty_archive_type', {type: typeFilter});
+      else if(isArchive) emptyEl.textContent = t('empty_archive');
+      else if(q) emptyEl.textContent = t('empty_search');
+      else if(typeFilter) emptyEl.textContent = t('empty_type', {type: typeFilter});
+      else if(counterFilter) emptyEl.textContent = t('empty_status', {status: t('status_' + counterFilter)});
+      else emptyEl.textContent = t('empty_pool');
       return;
     }
     emptyEl.style.display = 'none';
 
     rowsEl.innerHTML = filtered.map(s => {
-      const bjCell = meta.hasBouwjaar ? `<td data-label="Bouwjaar">${escapeHtml(s.Bouwjaar || '—')}</td>` : '';
-      const maatCell = meta.hasBouwjaar ? `<td class="mono" data-label="Maat">${escapeHtml(deriveSize(s.Serienummer))}</td>` : '';
-      const snCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.Serienummer)}')" title="Klik om te kopiëren">${escapeHtml(s.Serienummer)}</td>`;
-      const meCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.MEnummer)}')" title="Klik om te kopiëren">${escapeHtml(s.MEnummer)}</td>`;
+      const bjCell = meta.hasBouwjaar ? `<td data-label="${t('th_bouwjaar')}">${escapeHtml(s.Bouwjaar || '—')}</td>` : '';
+      const maatCell = meta.hasBouwjaar ? `<td class="mono" data-label="${t('th_maat')}">${escapeHtml(deriveSize(s.Serienummer))}</td>` : '';
+      const snCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.Serienummer)}')" title="${t('title_copy')}">${escapeHtml(s.Serienummer)}</td>`;
+      const meCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.MEnummer)}')" title="${t('title_copy')}">${escapeHtml(s.MEnummer)}</td>`;
 
       if(!isArchive){
         const isReserved = s.Status === 'Gereserveerd';
         let primaryBtn = isReserved
-          ? `<button class="primary-action release" onclick="resetAvailable('${s.ID}', this)">Vrijgeven</button>`
-          : `<button class="primary-action reserve" onclick="openReserveModal('${s.ID}')">Reserveren</button>`;
+          ? `<button class="primary-action release" onclick="resetAvailable('${s.ID}', this)">${t('btn_vrijgeven')}</button>`
+          : `<button class="primary-action reserve" onclick="openReserveModal('${s.ID}')">${t('btn_reserveren')}</button>`;
         let adminBtns = '';
         if(isAdmin){
           adminBtns = `
-            <button onclick="openDeliverModal('${s.ID}')">Uitleveren</button>
+            <button onclick="openDeliverModal('${s.ID}')">${t('btn_uitleveren')}</button>
             <div style="position:relative;display:inline-block;">
               <button class="kebab-btn" onclick="toggleKebab('${s.ID}', event)">⋯</button>
               <div class="kebab-menu" id="kebab-${s.ID}">
-                <button onclick="openItemDialog('edit','${s.ID}')">Bewerken</button>
-                <button class="danger" onclick="openDeleteModal('${s.ID}')">Verwijderen</button>
+                <button onclick="openItemDialog('edit','${s.ID}')">${t('btn_bewerken')}</button>
+                <button class="danger" onclick="openDeleteModal('${s.ID}')">${t('btn_verwijderen')}</button>
               </div>
             </div>`;
         }
-        const sinceNote = (isReserved && s.GereserveerdOp) ? `<span class="since-note">sinds ${fmtDate(s.GereserveerdOp)}</span>` : '';
+        const sinceNote = (isReserved && s.GereserveerdOp) ? `<span class="since-note">${t('since_note', {date: fmtDate(s.GereserveerdOp)})}</span>` : '';
         return `
         <tr class="${isReserved ? 'row-reserved' : ''}">
-          <td class="id-cell" data-label="ID">${s.ID}</td>
-          <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
+          <td class="id-cell" data-label="${t('th_id')}">${s.ID}</td>
+          <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
           ${maatCell}
           ${snCell}
           ${meCell}
           ${bjCell}
-          <td data-label="Status"><span class="status-pill ${s.Status}"><span class="bullet"></span>${s.Status}</span>${sinceNote}</td>
-          <td class="notes-cell" data-label="Notitie">${escapeHtml(s.Notitie || '—')}</td>
-          <td data-label="Acties"><div class="row-actions">${primaryBtn}${adminBtns}</div></td>
+          <td data-label="${t('th_status')}"><span class="status-pill ${s.Status}"><span class="bullet"></span>${t('status_' + s.Status)}</span>${sinceNote}</td>
+          <td class="notes-cell" data-label="${t('th_notitie')}">${escapeHtml(s.Notitie || '—')}</td>
+          <td data-label="${t('th_acties')}"><div class="row-actions">${primaryBtn}${adminBtns}</div></td>
         </tr>`;
       } else {
         return `
         <tr>
-          <td class="id-cell" data-label="ID">${s.ID}</td>
-          <td class="model-cell" data-label="Type">${escapeHtml(s.Type)}</td>
+          <td class="id-cell" data-label="${t('th_id')}">${s.ID}</td>
+          <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
           ${maatCell}
           ${snCell}
           ${meCell}
           ${bjCell}
-          <td data-label="Uitgeleverd op">${fmtDate(s.UitgeleverdOp)}</td>
-          <td data-label="Ticket">${escapeHtml(s.Ticket || '—')}</td>
-          <td data-label="Klant">${escapeHtml(s.Klant || '—')}</td>
+          <td data-label="${t('th_uitgeleverd_op')}">${fmtDate(s.UitgeleverdOp)}</td>
+          <td data-label="${t('th_ticket')}">${escapeHtml(s.Ticket || '—')}</td>
+          <td data-label="${t('th_klant')}">${escapeHtml(s.Klant || '—')}</td>
         </tr>`;
       }
     }).join('');
@@ -909,7 +1173,7 @@
   function setBusy(btnId, busy, busyLabel, idleLabel){
     const btn = document.getElementById(btnId);
     btn.disabled = busy;
-    btn.textContent = busy ? (busyLabel || 'Bezig…') : idleLabel;
+    btn.textContent = busy ? (busyLabel || t('btn_busy')) : idleLabel;
   }
 
   // ══════════════════════════════════════════════════════════
@@ -924,37 +1188,37 @@
 
   async function submitLogin(){
     const pw = document.getElementById('loginPw').value;
-    if(!pw){ document.getElementById('loginErr').textContent = 'Vul een wachtwoord in.'; return; }
-    setBusy('loginSubmitBtn', true, 'Bezig…', 'Inloggen');
+    if(!pw){ document.getElementById('loginErr').textContent = t('err_password_required'); return; }
+    setBusy('loginSubmitBtn', true, t('btn_busy'), t('btn_inloggen'));
     document.getElementById('loginErr').textContent = '';
     try {
       const res = await apiPost({ action: 'auth', categorie: activeCat, password: pw });
       if(res.ok === true){
         becomeAdmin(pw);
         closeModal('loginModal');
-        toast('Ingelogd als beheerder.');
+        toast(t('toast_logged_in'));
       } else if(res.ok === false && res.error === 'Onjuist wachtwoord'){
-        document.getElementById('loginErr').textContent = 'Onjuist wachtwoord.';
+        document.getElementById('loginErr').textContent = t('err_wrong_password');
       } else {
         // Server kent 'auth' nog niet (oudere deployment) — accepteren zoals voorheen,
         // echte validatie gebeurt dan bij de eerstvolgende beheeractie.
         becomeAdmin(pw);
         closeModal('loginModal');
-        toast('Ingelogd als beheerder.');
+        toast(t('toast_logged_in'));
       }
     } catch(err){
       becomeAdmin(pw);
       closeModal('loginModal');
-      toast('Ingelogd als beheerder.');
+      toast(t('toast_logged_in'));
     }
-    setBusy('loginSubmitBtn', false, '', 'Inloggen');
+    setBusy('loginSubmitBtn', false, '', t('btn_inloggen'));
   }
 
   function becomeAdmin(pw){
     isAdmin = true;
     adminPassword = pw;
-    document.getElementById('adminBtn').textContent = 'Uitloggen';
-    document.getElementById('adminBadge').textContent = 'Beheerder';
+    document.getElementById('adminBtn').textContent = t('admin_logout_btn');
+    document.getElementById('adminBadge').textContent = t('admin_badge_on');
     document.getElementById('adminBadge').classList.add('on');
     updateHeader();
     render();
@@ -962,8 +1226,8 @@
   function logout(){
     isAdmin = false;
     adminPassword = '';
-    document.getElementById('adminBtn').textContent = 'Beheerder inloggen';
-    document.getElementById('adminBadge').textContent = 'Alleen bekijken en reserveren';
+    document.getElementById('adminBtn').textContent = t('admin_login_btn');
+    document.getElementById('adminBadge').textContent = t('admin_readonly_badge');
     document.getElementById('adminBadge').classList.remove('on');
     updateHeader();
     render();
@@ -974,7 +1238,6 @@
   // Reserveren (open, geen wachtwoord) / Vrijgeven (open)
   // ══════════════════════════════════════════════════════════
   function itemRefHtml(item){
-    const meta = currentCatMeta();
     return `<span class="mi-type">${escapeHtml(item.Type)}</span><span class="mi-sn">SN: ${escapeHtml(item.Serienummer)} · ME: ${escapeHtml(item.MEnummer)}</span>`;
   }
 
@@ -992,34 +1255,34 @@
     const naam = document.getElementById('reserveName').value.trim();
     const reden = document.getElementById('reserveNote').value.trim();
     const errEl = document.getElementById('reserveErr');
-    if(!naam){ errEl.textContent = 'Vul je naam in, zodat collega\'s zien wie het heeft gereserveerd.'; return; }
+    if(!naam){ errEl.textContent = t('err_name_required'); return; }
     errEl.textContent = '';
     const notitie = reden ? `${naam} — ${reden}` : naam;
     const id = pendingReserveId;
-    setBusy('reserveSubmitBtn', true, 'Bezig…', 'Reserveren');
+    setBusy('reserveSubmitBtn', true, t('btn_busy'), t('btn_reserveren'));
     const res = await apiPost({ action: 'markReserved', categorie: activeCat, id, notitie });
-    setBusy('reserveSubmitBtn', false, '', 'Reserveren');
-    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
+    setBusy('reserveSubmitBtn', false, '', t('btn_reserveren'));
+    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
     const item = findLocal(id);
     if(item){ item.Status = 'Gereserveerd'; item.Notitie = notitie; item.GereserveerdOp = res.gereserveerdOp || new Date().toISOString(); }
     closeModal('reserveModal');
     render();
-    toast(`${item ? item.Type : 'Item'} gereserveerd door ${naam}.`);
+    toast(t('toast_reserved', { type: item ? item.Type : t('item_fallback'), name: naam }));
   }
 
   async function resetAvailable(id, btnEl){
     const item = findLocal(id);
     const orig = btnEl.textContent;
-    btnEl.disabled = true; btnEl.textContent = 'Bezig…';
+    btnEl.disabled = true; btnEl.textContent = t('btn_busy');
     const res = await apiPost({ action: 'resetAvailable', categorie: activeCat, id });
     if(!res.ok){
-      toast(res.error || 'Actie mislukt.', true);
+      toast(res.error || t('err_action_failed'), true);
       btnEl.disabled = false; btnEl.textContent = orig;
       return;
     }
     if(item){ item.Status = 'Beschikbaar'; item.GereserveerdOp = ''; }
     render();
-    toast(`${item ? item.Type : 'Item'} weer beschikbaar.`);
+    toast(t('toast_released', { type: item ? item.Type : t('item_fallback') }));
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1046,8 +1309,8 @@
     const meta = currentCatMeta();
     const opts = effectiveTypeOptions(activeCat);
     const sel = document.getElementById('itemType');
-    sel.innerHTML = opts.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')
-      + '<option value="__other__">+ Ander type</option>';
+    sel.innerHTML = opts.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')
+      + `<option value="__other__">${t('option_other_type')}</option>`;
     document.getElementById('itemErr').textContent = '';
     document.getElementById('itemBouwjaarLabel').style.display = meta.hasBouwjaar ? 'block' : 'none';
     document.getElementById('itemBouwjaar').style.display = meta.hasBouwjaar ? 'block' : 'none';
@@ -1055,7 +1318,7 @@
     if(mode === 'edit'){
       const item = findLocal(id);
       if(!item) return;
-      document.getElementById('itemModalTitle').textContent = 'Item bewerken';
+      document.getElementById('itemModalTitle').textContent = t('modal_item_edit_title');
       document.getElementById('itemModalRef').style.display = 'block';
       document.getElementById('itemModalRef').innerHTML = itemRefHtml(item);
       if(opts.includes(item.Type)){
@@ -1071,7 +1334,7 @@
       document.getElementById('itemBouwjaar').value = item.Bouwjaar || '';
       document.getElementById('itemNotes').value = item.Notitie || '';
     } else {
-      document.getElementById('itemModalTitle').textContent = 'Nieuw item';
+      document.getElementById('itemModalTitle').textContent = t('modal_item_new_title');
       document.getElementById('itemModalRef').style.display = 'none';
       sel.value = opts[0] || '__other__';
       document.getElementById('itemTypeOther').style.display = 'none';
@@ -1101,26 +1364,26 @@
     const notitie = document.getElementById('itemNotes').value.trim();
     const errEl = document.getElementById('itemErr');
     errEl.textContent = '';
-    if(!type || !serienummer){ errEl.textContent = 'Type en serienummer zijn verplicht.'; return; }
-    if(isDuplicateSerial(serienummer, editingId)){ errEl.textContent = 'Dit serienummer staat al in de lijst.'; return; }
+    if(!type || !serienummer){ errEl.textContent = t('err_type_sn_required'); return; }
+    if(isDuplicateSerial(serienummer, editingId)){ errEl.textContent = t('err_duplicate_sn'); return; }
 
-    setBusy('itemSubmitBtn', true, 'Bezig…', 'Opslaan');
+    setBusy('itemSubmitBtn', true, t('btn_busy'), t('btn_opslaan'));
     let res;
     if(editingId){
       res = await adminPost({ action: 'update', id: editingId, type, serienummer, menummer, bouwjaar, notitie });
     } else {
       res = await adminPost({ action: 'add', type, serienummer, menummer, bouwjaar, notitie });
     }
-    setBusy('itemSubmitBtn', false, '', 'Opslaan');
-    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
+    setBusy('itemSubmitBtn', false, '', t('btn_opslaan'));
+    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
 
     if(editingId){
       const item = findLocal(editingId);
       if(item){ item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer; item.Bouwjaar = bouwjaar || null; item.Notitie = notitie; }
-      toast(`${type} bijgewerkt.`);
+      toast(t('toast_updated', { type }));
     } else {
       cache[activeCat].pool.push({ ID: res.id, Type: type, Serienummer: serienummer, MEnummer: menummer, Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie });
-      toast(`${type} toegevoegd.`);
+      toast(t('toast_added', { type }));
     }
     closeModal('itemModal');
     render();
@@ -1143,15 +1406,15 @@
     const ticket = document.getElementById('delTicket').value.trim();
     const klant = document.getElementById('delKlant').value.trim();
     const errEl = document.getElementById('deliverErr');
-    if(!ticket){ errEl.textContent = 'Ticketnummer is verplicht.'; return; }
+    if(!ticket){ errEl.textContent = t('err_ticket_required'); return; }
     errEl.textContent = '';
     const id = pendingDeliverId;
-    setBusy('deliverSubmitBtn', true, 'Bezig…', 'Bevestigen');
+    setBusy('deliverSubmitBtn', true, t('btn_busy'), t('btn_bevestigen'));
     const res = await adminPost({ action: 'deliver', id, ticket, klant });
-    setBusy('deliverSubmitBtn', false, '', 'Bevestigen');
-    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
+    setBusy('deliverSubmitBtn', false, '', t('btn_bevestigen'));
+    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
     const idx = cache[activeCat].pool.findIndex(s => s.ID === id);
-    let typeName = 'Item';
+    let typeName = t('item_fallback');
     if(idx > -1){
       const [item] = cache[activeCat].pool.splice(idx, 1);
       item.UitgeleverdOp = new Date().toISOString();
@@ -1162,7 +1425,7 @@
     }
     closeModal('deliverModal');
     render();
-    toast(`${typeName} uitgeleverd onder ${ticket}.`);
+    toast(t('toast_delivered', { type: typeName, ticket }));
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1180,19 +1443,21 @@
     const id = pendingDeleteId;
     const item = findLocal(id);
     const errEl = document.getElementById('deleteErr');
-    setBusy('deleteSubmitBtn', true, 'Bezig…', 'Verwijderen');
+    setBusy('deleteSubmitBtn', true, t('btn_busy'), t('btn_verwijderen'));
     const res = await adminPost({ action: 'delete', id });
-    setBusy('deleteSubmitBtn', false, '', 'Verwijderen');
-    if(!res.ok){ errEl.textContent = res.error || 'Actie mislukt.'; return; }
+    setBusy('deleteSubmitBtn', false, '', t('btn_verwijderen'));
+    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
     cache[activeCat].pool = cache[activeCat].pool.filter(s => s.ID !== id);
     closeModal('deleteModal');
     render();
-    toast(`${item ? item.Type : 'Item'} verwijderd.`);
+    toast(t('toast_deleted', { type: item ? item.Type : t('item_fallback') }));
   }
 
   // ══════════════════════════════════════════════════════════
   // Init
   // ══════════════════════════════════════════════════════════
+  renderLangSwitch();
+  applyStaticTranslations();
   render();
   loadAllCategories();
 </script>
