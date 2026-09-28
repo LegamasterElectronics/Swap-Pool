@@ -146,9 +146,10 @@
   .row-actions button:disabled{opacity:0.6;cursor:default;}
   .row-actions button.primary-action.reserve{border-color:var(--warn-bg);color:var(--warn);}
   .row-actions button.primary-action.release{border-color:var(--ok-bg);color:var(--ok);}
+  .row-actions button.danger-action{border-color:var(--warn-bg);color:var(--warn);}
   .kebab-btn{padding:6px 9px !important;font-weight:700;}
   .kebab-menu{
-    display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid var(--line);
+    display:none;position:fixed;top:0;left:0;background:#fff;border:1px solid var(--line);
     border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:5;min-width:140px;overflow:hidden;
   }
   .kebab-menu.open{display:block;}
@@ -369,6 +370,8 @@
   // ══════════════════════════════════════════════════════════
   const LANG = {
     nl: {
+      err_not_applied: 'De server gaf een onverwacht antwoord en de actie is niet doorgevoerd. Probeer het opnieuw.',
+      err_unconfirmed: 'De server gaf een onverwacht antwoord en het is niet te controleren of de actie is gelukt. Ververs de pagina en kijk na voordat je het opnieuw probeert.',
       modal_restore_title: 'Terugzetten in pool',
       restore_confirm_text: 'Dit zet het item terug in de pool als "Beschikbaar". De uitlevergegevens (datum, ticket en klant) worden gewist.',
       btn_restore: 'Terugzetten',
@@ -428,6 +431,8 @@
       item_fallback: 'Item', title_copy: 'Klik om te kopiëren',
     },
     de: {
+      err_not_applied: 'Der Server hat unerwartet geantwortet und die Aktion wurde nicht ausgeführt. Bitte erneut versuchen.',
+      err_unconfirmed: 'Der Server hat unerwartet geantwortet und es lässt sich nicht prüfen, ob die Aktion geklappt hat. Seite neu laden und nachsehen, bevor du es erneut versuchst.',
       modal_restore_title: 'In den Pool zurücksetzen',
       restore_confirm_text: 'Damit wird der Artikel als "Verfügbar" in den Pool zurückgesetzt. Die Auslieferungsdaten (Datum, Ticket und Kunde) werden gelöscht.',
       btn_restore: 'Zurücksetzen',
@@ -486,6 +491,8 @@
       item_fallback: 'Artikel', title_copy: 'Zum Kopieren klicken',
     },
     en: {
+      err_not_applied: 'The server gave an unexpected reply and the action was not carried out. Please try again.',
+      err_unconfirmed: 'The server gave an unexpected reply and it could not be checked whether the action worked. Reload the page and check before trying again.',
       modal_restore_title: 'Return to pool',
       restore_confirm_text: 'This puts the item back in the pool as "Available". The delivery details (date, ticket and customer) will be cleared.',
       btn_restore: 'Return to pool',
@@ -544,6 +551,8 @@
       item_fallback: 'Item', title_copy: 'Click to copy',
     },
     fy: {
+      err_not_applied: 'De server joech in ûnferwacht antwurd en de aksje is net útfierd. Probearje it nochris.',
+      err_unconfirmed: 'De server joech in ûnferwacht antwurd en it is net te kontrolearjen oft de aksje slagge is. Fernij de side en kontrolearje it foardat it opnij probearre wurdt.',
       modal_restore_title: 'Weromsette yn de pool',
       restore_confirm_text: 'Dit set it item werom yn de pool as "Beskikber". De leveringsgegevens (datum, ticket en klant) wurde wiske.',
       btn_restore: 'Weromsette',
@@ -748,6 +757,39 @@
     }
   }
 
+  // Voert een schrijfactie uit. Komt er een antwoord terug dat niet kan kloppen (de pagina stuurt altijd
+  // een geldige categorie mee, dus "Onbekende categorie" is nooit een echt antwoord op onze actie) of
+  // ging er iets mis onderweg, dan is niet zeker of de actie is uitgevoerd. In dat geval halen we de
+  // categorie opnieuw op en kijken of het gewenste eindresultaat er staat. Zo krijg je geen valse foutmelding
+  // bij een actie die wél is gelukt, en probeer je niet voor de tweede keer (bij "Nieuw item" = dubbele rij).
+  function sameVal(a, b){ return String(a ?? '') === String(b ?? ''); }
+  async function apiWrite(body, verify){
+    let res, threw = false;
+    try { res = await apiPost(body); } catch(err){ threw = true; res = { ok: false }; }
+    const odd = threw || (res.ok === false && res.error === 'Onbekende categorie');
+    if(res.ok || !odd) return res;
+    let verifiedNegative = false;
+    if(verify){
+      try {
+        const fresh = await apiAll([activeCat]);
+        if(fresh.ok){
+          const d = fresh.data[activeCat];
+          const found = verify(d);
+          if(found){
+            cache[activeCat].pool = d.pool;
+            cache[activeCat].archive = d.archive;
+            cache[activeCat].loaded = true;
+            cache[activeCat].error = null;
+            return { ok: true, verified: true, id: found.ID };
+          }
+          verifiedNegative = true;
+        }
+      } catch(err){ /* controle mislukt: terugvallen op de foutmelding hieronder */ }
+    }
+    if(threw) return { ok: false, error: t('err_connection') };
+    return { ok: false, error: t(verifiedNegative ? 'err_not_applied' : 'err_unconfirmed') };
+  }
+
   function demoFind(cat, id){
     return demoStore[cat].pool.find(s => s.ID === id);
   }
@@ -787,6 +829,7 @@
     }
     if(body.action === 'delete'){
       demoStore[cat].pool = demoStore[cat].pool.filter(s => s.ID !== body.id);
+      demoStore[cat].archive = demoStore[cat].archive.filter(s => s.ID !== body.id);
       return { ok: true };
     }
     if(body.action === 'deliver'){
@@ -821,8 +864,8 @@
   // POST-wrapper voor beheeracties: voegt wachtwoord toe en logt automatisch uit
   // bij een foutmelding "Onjuist wachtwoord" (bijv. als het wachtwoord server-side
   // is gewijzigd terwijl deze sessie nog "ingelogd" was).
-  async function adminPost(body){
-    const res = await apiPost({ ...body, categorie: activeCat, password: adminPassword });
+  async function adminPost(body, verify){
+    const res = await apiWrite({ ...body, categorie: activeCat, password: adminPassword }, verify);
     if(!res.ok && res.error === 'Onjuist wachtwoord'){
       forceLogout();
       toast(t('toast_wrong_password_logout'), true);
@@ -890,7 +933,11 @@
     render();
     if(k){
       const el = document.getElementById('kebab-' + k);
-      if(el){ el.classList.add('open'); openKebabId = k; }
+      if(el){
+        el.classList.add('open'); openKebabId = k;
+        const btn = el.previousElementSibling;
+        if(btn) positionKebab(el, btn);
+      }
     }
   }
 
@@ -1249,7 +1296,7 @@
           <td data-label="${t('th_uitgeleverd_op')}">${fmtDate(s.UitgeleverdOp)}</td>
           <td data-label="${t('th_ticket')}">${escapeHtml(s.Ticket || '—')}</td>
           <td data-label="${t('th_klant')}">${escapeHtml(s.Klant || '—')}</td>
-          ${isAdmin ? `<td data-label="${t('th_acties')}"><div class="row-actions"><button onclick="openRestoreModal('${s.ID}')">${t('btn_restore')}</button></div></td>` : ''}
+          ${isAdmin ? `<td data-label="${t('th_acties')}"><div class="row-actions"><button onclick="openRestoreModal('${s.ID}')">${t('btn_restore')}</button><button class="danger-action" onclick="openDeleteModal('${s.ID}')">${t('btn_verwijderen')}</button></div></td>` : ''}
         </tr>`;
       }
     }).join('');
@@ -1264,7 +1311,20 @@
     closeKebab();
     openKebabId = id;
     const el = document.getElementById('kebab-' + id);
-    if(el) el.classList.add('open');
+    if(!el) return;
+    el.classList.add('open');
+    positionKebab(el, ev.currentTarget);
+  }
+  // Het menu staat los van de tabel (position: fixed), zodat het nooit wordt afgekapt.
+  // Klapt naar boven open als er onderaan het scherm geen ruimte is.
+  function positionKebab(menu, btn){
+    const r = btn.getBoundingClientRect();
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    const left = Math.min(Math.max(8, r.right - mw), window.innerWidth - mw - 8);
+    let top = r.bottom + 4;
+    if(top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 4);
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
   }
   function closeKebab(){
     if(openKebabId){
@@ -1274,6 +1334,8 @@
     openKebabId = null;
   }
   document.addEventListener('click', closeKebab);
+  window.addEventListener('scroll', closeKebab, true); // ook bij scrollen in de tabel zelf
+  window.addEventListener('resize', closeKebab);
 
   // ══════════════════════════════════════════════════════════
   // Modal-infrastructuur: Esc sluit, klik naast dialoog sluit,
@@ -1379,7 +1441,10 @@
   // Reserveren (open, geen wachtwoord) / Vrijgeven (open)
   // ══════════════════════════════════════════════════════════
   function itemRefHtml(item){
-    return `<span class="mi-type">${escapeHtml(item.Type)}</span><span class="mi-sn">SN: ${escapeHtml(item.Serienummer)} · ME: ${escapeHtml(item.MEnummer)}</span>`;
+    const delivered = item.UitgeleverdOp
+      ? `<span class="mi-sn" style="display:block;">${t('th_uitgeleverd_op')}: ${fmtDate(item.UitgeleverdOp)} · ${escapeHtml(item.Ticket || '—')} · ${escapeHtml(item.Klant || '—')}</span>`
+      : '';
+    return `<span class="mi-type">${escapeHtml(item.Type)}</span><span class="mi-sn">SN: ${escapeHtml(item.Serienummer)} · ME: ${escapeHtml(item.MEnummer)}</span>${delivered}`;
   }
 
   function openReserveModal(id){
@@ -1401,7 +1466,8 @@
     const notitie = reden ? `${naam} — ${reden}` : naam;
     const id = pendingReserveId;
     setBusy('reserveSubmitBtn', true, t('btn_busy'), t('btn_reserveren'));
-    const res = await apiPost({ action: 'markReserved', categorie: activeCat, id, notitie });
+    const res = await apiWrite({ action: 'markReserved', categorie: activeCat, id, notitie },
+      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Gereserveerd' && sameVal(s.Notitie, notitie); });
     setBusy('reserveSubmitBtn', false, '', t('btn_reserveren'));
     if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
     const item = findLocal(id);
@@ -1415,7 +1481,8 @@
     const item = findLocal(id);
     const orig = btnEl.textContent;
     btnEl.disabled = true; btnEl.textContent = t('btn_busy');
-    const res = await apiPost({ action: 'resetAvailable', categorie: activeCat, id });
+    const res = await apiWrite({ action: 'resetAvailable', categorie: activeCat, id },
+      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Beschikbaar'; });
     if(!res.ok){
       toast(res.error || t('err_action_failed'), true);
       btnEl.disabled = false; btnEl.textContent = orig;
@@ -1511,9 +1578,12 @@
     setBusy('itemSubmitBtn', true, t('btn_busy'), t('btn_opslaan'));
     let res;
     if(editingId){
-      res = await adminPost({ action: 'update', id: editingId, type, serienummer, menummer, bouwjaar, notitie });
+      const eid = editingId;
+      res = await adminPost({ action: 'update', id: eid, type, serienummer, menummer, bouwjaar, notitie },
+        d => { const s = d.pool.find(x => x.ID === eid); return s && sameVal(s.Type, type) && sameVal(s.Serienummer, serienummer) && sameVal(s.MEnummer, menummer) && sameVal(s.Bouwjaar, bouwjaar) && sameVal(s.Notitie, notitie); });
     } else {
-      res = await adminPost({ action: 'add', type, serienummer, menummer, bouwjaar, notitie });
+      res = await adminPost({ action: 'add', type, serienummer, menummer, bouwjaar, notitie },
+        d => d.pool.find(x => sameVal(x.Serienummer, serienummer) && sameVal(x.Type, type)));
     }
     setBusy('itemSubmitBtn', false, '', t('btn_opslaan'));
     if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
@@ -1523,7 +1593,7 @@
       if(item){ item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer; item.Bouwjaar = bouwjaar || null; item.Notitie = notitie; }
       toast(t('toast_updated', { type }));
     } else {
-      cache[activeCat].pool.push({ ID: res.id, Type: type, Serienummer: serienummer, MEnummer: menummer, Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie });
+      if(!cache[activeCat].pool.some(x => x.ID === res.id)) cache[activeCat].pool.push({ ID: res.id, Type: type, Serienummer: serienummer, MEnummer: menummer, Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie });
       toast(t('toast_added', { type }));
     }
     closeModal('itemModal');
@@ -1551,11 +1621,13 @@
     errEl.textContent = '';
     const id = pendingDeliverId;
     setBusy('deliverSubmitBtn', true, t('btn_busy'), t('btn_bevestigen'));
-    const res = await adminPost({ action: 'deliver', id, ticket, klant });
+    const typeBefore = (findLocal(id) || {}).Type;
+    const res = await adminPost({ action: 'deliver', id, ticket, klant },
+      d => { const s = d.archive.find(x => x.ID === id); return s && sameVal(s.Ticket, ticket); });
     setBusy('deliverSubmitBtn', false, '', t('btn_bevestigen'));
     if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
     const idx = cache[activeCat].pool.findIndex(s => s.ID === id);
-    let typeName = t('item_fallback');
+    let typeName = typeBefore || t('item_fallback');
     if(idx > -1){
       const [item] = cache[activeCat].pool.splice(idx, 1);
       item.UitgeleverdOp = new Date().toISOString();
@@ -1588,7 +1660,8 @@
     const item = findArchived(id);
     const errEl = document.getElementById('restoreErr');
     setBusy('restoreSubmitBtn', true, t('btn_busy'), t('btn_restore'));
-    const res = await adminPost({ action: 'restore', id });
+    const res = await adminPost({ action: 'restore', id },
+      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Beschikbaar'; });
     setBusy('restoreSubmitBtn', false, '', t('btn_restore'));
     if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
     const idx = cache[activeCat].archive.findIndex(s => s.ID === id);
@@ -1606,7 +1679,7 @@
   // Verwijderen — eigen bevestigingsdialoog, Beheerder only
   // ══════════════════════════════════════════════════════════
   function openDeleteModal(id){
-    const item = findLocal(id);
+    const item = findLocal(id) || findArchived(id);
     if(!item) return;
     pendingDeleteId = id;
     document.getElementById('deleteItemRef').innerHTML = itemRefHtml(item);
@@ -1615,13 +1688,15 @@
   }
   async function submitDelete(){
     const id = pendingDeleteId;
-    const item = findLocal(id);
+    const item = findLocal(id) || findArchived(id);
     const errEl = document.getElementById('deleteErr');
     setBusy('deleteSubmitBtn', true, t('btn_busy'), t('btn_verwijderen'));
-    const res = await adminPost({ action: 'delete', id });
+    const res = await adminPost({ action: 'delete', id },
+      d => !d.pool.some(x => x.ID === id) && !d.archive.some(x => x.ID === id) ? { ID: id } : null);
     setBusy('deleteSubmitBtn', false, '', t('btn_verwijderen'));
     if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
     cache[activeCat].pool = cache[activeCat].pool.filter(s => s.ID !== id);
+    cache[activeCat].archive = cache[activeCat].archive.filter(s => s.ID !== id);
     closeModal('deleteModal');
     render();
     toast(t('toast_deleted', { type: item ? item.Type : t('item_fallback') }));
