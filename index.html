@@ -384,6 +384,7 @@
   // ══════════════════════════════════════════════════════════
   const LANG = {
     nl: {
+      admin_badge_verifying: 'Beheerder (wachtwoord controleren…)',
       saving_pending: 'Opslaan… ({n})',
       saving_short: 'Opslaan…',
       err_save_failed: 'Opslaan mislukt ({reason}). De lijst wordt bijgewerkt; controleer de huidige stand.',
@@ -448,6 +449,7 @@
       item_fallback: 'Item', title_copy: 'Klik om te kopiëren',
     },
     de: {
+      admin_badge_verifying: 'Administrator (Passwort wird geprüft…)',
       saving_pending: 'Wird gespeichert… ({n})',
       saving_short: 'Wird gespeichert…',
       err_save_failed: 'Speichern fehlgeschlagen ({reason}). Die Liste wird aktualisiert; bitte den aktuellen Stand prüfen.',
@@ -511,6 +513,7 @@
       item_fallback: 'Artikel', title_copy: 'Zum Kopieren klicken',
     },
     en: {
+      admin_badge_verifying: 'Admin (checking password…)',
       saving_pending: 'Saving… ({n})',
       saving_short: 'Saving…',
       err_save_failed: 'Saving failed ({reason}). The list is being refreshed; please check the current state.',
@@ -574,6 +577,7 @@
       item_fallback: 'Item', title_copy: 'Click to copy',
     },
     fy: {
+      admin_badge_verifying: 'Behearder (wachtwurd kontrolearje…)',
       saving_pending: 'Bewarje… ({n})',
       saving_short: 'Bewarje…',
       err_save_failed: 'Bewarjen mislearre ({reason}). De list wurdt bywurke; kontrolearje de hjoeddeiske steat.',
@@ -659,8 +663,14 @@
   function applyStaticTranslations(){
     document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
-    document.getElementById('adminBadge').textContent = isAdmin ? t('admin_badge_on') : t('admin_readonly_badge');
+    updateAdminUI();
+  }
+
+  function updateAdminUI(){
     document.getElementById('adminBtn').textContent = isAdmin ? t('admin_logout_btn') : t('admin_login_btn');
+    const badge = document.getElementById('adminBadge');
+    badge.textContent = !isAdmin ? t('admin_readonly_badge') : (adminVerifying ? t('admin_badge_verifying') : t('admin_badge_on'));
+    badge.classList.toggle('on', isAdmin);
   }
 
   function setLanguage(code){
@@ -715,6 +725,8 @@
   let counterFilter = null; // null | 'Beschikbaar' | 'Gereserveerd'
   let typeFilter = null; // null | een specifieke Type-waarde
   let isAdmin = false;
+  let adminVerifying = false; // wachtwoord is nog niet door de server bevestigd
+  let loginToken = 0;         // maakt een verouderde controle (na uitloggen/opnieuw inloggen) onschadelijk
   let adminPassword = '';
   let openKebabId = null;
 
@@ -912,9 +924,8 @@
   async function adminPost(cat, body, verify, pw){
     const res = await apiWrite(cat, { ...body, password: pw }, verify);
     if(!res.ok && res.error === 'Onjuist wachtwoord'){
-      forceLogout();
-      toast(t('toast_wrong_password_logout'), true);
-      res.handled = true; // al gemeld, niet nogmaals een algemene foutmelding tonen
+      if(isAdmin){ forceLogout(); toast(t('toast_wrong_password_logout'), true); }
+      res.handled = true; // al gemeld (of al uitgelogd), niet nogmaals een algemene foutmelding tonen
     }
     return res;
   }
@@ -1482,50 +1493,54 @@
     openModal('loginModal', 'loginPw');
   }
 
-  async function submitLogin(){
+  // Meteen ontgrendelen; de server controleert het wachtwoord op de achtergrond. Elke beheeractie wordt
+  // door de server sowieso zelf met het wachtwoord gecontroleerd, dus dit geeft nooit toegang zonder wachtwoord.
+  function submitLogin(){
     const pw = document.getElementById('loginPw').value;
     if(!pw){ document.getElementById('loginErr').textContent = t('err_password_required'); return; }
-    setBusy('loginSubmitBtn', true, t('btn_busy'), t('btn_inloggen'));
     document.getElementById('loginErr').textContent = '';
-    try {
-      const res = await apiPost({ action: 'auth', categorie: activeCat, password: pw });
-      if(res.ok === true){
-        becomeAdmin(pw);
-        closeModal('loginModal');
-        toast(t('toast_logged_in'));
-      } else if(res.ok === false && res.error === 'Onjuist wachtwoord'){
+    const token = ++loginToken;
+    adminVerifying = true;
+    becomeAdmin(pw);
+    closeModal('loginModal');
+    verifyLogin(pw, token);
+  }
+  async function verifyLogin(pw, token){
+    let res = null;
+    try { res = await apiPost({ action: 'auth', categorie: activeCat, password: pw }); } catch(err){ res = null; }
+    if(token !== loginToken) return; // intussen uitgelogd of opnieuw ingelogd
+    adminVerifying = false;
+    if(res && res.ok === false && res.error === 'Onjuist wachtwoord'){
+      logout();
+      if(!topOpenModal()){
+        document.getElementById('loginPw').value = '';
         document.getElementById('loginErr').textContent = t('err_wrong_password');
+        openModal('loginModal', 'loginPw');
       } else {
-        // Server kent 'auth' nog niet (oudere deployment) — accepteren zoals voorheen,
-        // echte validatie gebeurt dan bij de eerstvolgende beheeractie.
-        becomeAdmin(pw);
-        closeModal('loginModal');
-        toast(t('toast_logged_in'));
+        toast(t('err_wrong_password'), true);
       }
-    } catch(err){
-      becomeAdmin(pw);
-      closeModal('loginModal');
-      toast(t('toast_logged_in'));
+      return;
     }
-    setBusy('loginSubmitBtn', false, '', t('btn_inloggen'));
+    // Ook bij een onduidelijk antwoord (bijv. oudere server zonder 'auth') ingelogd laten: de echte
+    // controle gebeurt dan bij de eerstvolgende beheeractie.
+    updateAdminUI();
+    toast(t('toast_logged_in'));
   }
 
   function becomeAdmin(pw){
     isAdmin = true;
     adminPassword = pw;
     document.getElementById('loginPw').value = ''; // niet in het veld laten staan
-    document.getElementById('adminBtn').textContent = t('admin_logout_btn');
-    document.getElementById('adminBadge').textContent = t('admin_badge_on');
-    document.getElementById('adminBadge').classList.add('on');
+    updateAdminUI();
     updateHeader();
     render();
   }
   function logout(){
     isAdmin = false;
     adminPassword = '';
-    document.getElementById('adminBtn').textContent = t('admin_login_btn');
-    document.getElementById('adminBadge').textContent = t('admin_readonly_badge');
-    document.getElementById('adminBadge').classList.remove('on');
+    adminVerifying = false;
+    loginToken++;
+    updateAdminUI();
     updateHeader();
     render();
   }
