@@ -29,6 +29,12 @@
   }
   body.demo .demo-banner{display:block;}
 
+  .sync-warning{
+    display:none;background:var(--warn-bg);color:var(--warn);text-align:center;font-size:12.5px;font-weight:700;
+    padding:8px 16px;border-bottom:1px solid #f0c9c5;
+  }
+  .sync-warning.show{display:block;}
+
   /* ── Top bar ────────────────────────────────────────────── */
   .topbar{background:var(--navy);color:#fff;}
   .topbar-inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
@@ -205,6 +211,8 @@
   <div class="cattabs-inner" id="catTabs"></div>
 </nav>
 
+<div class="sync-warning" id="syncWarning" data-i18n="sync_offline">Geen verbinding met de server — de getoonde gegevens zijn mogelijk verouderd.</div>
+
 <div class="wrap" id="app">
   <header>
     <h1 id="pageTitle">—</h1>
@@ -343,6 +351,7 @@
   // ══════════════════════════════════════════════════════════
   const LANG = {
     nl: {
+      sync_offline: 'Geen verbinding met de server — de getoonde gegevens zijn mogelijk verouderd.',
       demo_banner: 'Voorbeeldmodus — dit is testdata, er wordt niets opgeslagen.',
       admin_readonly_badge: 'Alleen bekijken en reserveren',
       admin_badge_on: 'Beheerder',
@@ -397,6 +406,7 @@
       item_fallback: 'Item', title_copy: 'Klik om te kopiëren',
     },
     de: {
+      sync_offline: 'Keine Verbindung zum Server — die angezeigten Daten sind möglicherweise veraltet.',
       demo_banner: 'Testmodus — dies sind Testdaten, es wird nichts gespeichert.',
       admin_readonly_badge: 'Nur ansehen und reservieren',
       admin_badge_on: 'Administrator',
@@ -450,6 +460,7 @@
       item_fallback: 'Artikel', title_copy: 'Zum Kopieren klicken',
     },
     en: {
+      sync_offline: 'No connection to the server — the data shown may be out of date.',
       demo_banner: 'Demo mode — this is test data, nothing is saved.',
       admin_readonly_badge: 'View and reserve only',
       admin_badge_on: 'Admin',
@@ -503,6 +514,7 @@
       item_fallback: 'Item', title_copy: 'Click to copy',
     },
     fy: {
+      sync_offline: 'Gjin ferbining mei de server — de werjûne gegevens binne miskien ferâldere.',
       demo_banner: 'Foarbyldmodus — dit is testdata, der wurdt neat bewarre.',
       admin_readonly_badge: 'Allinnich sjen en reservearje',
       admin_badge_on: 'Behearder',
@@ -637,6 +649,13 @@
   let adminPassword = '';
   let openKebabId = null;
 
+  // Automatisch verversen (zie pollOnce)
+  const POLL_INTERVAL_MS = 20000; // hoe vaak de pagina op de achtergrond nieuwe gegevens ophaalt
+  let pollInFlight = false;
+  let writeCounter = 0;     // telt elke start en afronding van een schrijfactie
+  let writesInFlight = 0;   // aantal schrijfacties dat nu nog loopt
+  let syncFailCount = 0;    // aantal mislukte verversingen achter elkaar
+
   let pendingReserveId = null;
   let pendingDeliverId = null;
   let pendingDeleteId = null;
@@ -682,8 +701,16 @@
     if(DEMO_MODE){
       return demoPost(body);
     }
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
-    return res.json();
+    // Elke schrijfactie wordt geteld, zodat een achtergrond-verversing die tijdens
+    // die actie is opgehaald genegeerd kan worden (anders draait hij de wijziging terug).
+    const isWrite = body.action !== 'auth';
+    if(isWrite){ writesInFlight++; writeCounter++; }
+    try {
+      const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
+      return await res.json();
+    } finally {
+      if(isWrite){ writesInFlight--; writeCounter++; }
+    }
   }
 
   function demoFind(cat, id){
@@ -802,6 +829,67 @@
       cache[activeCat].error = 'Kon geen verbinding maken met de server.';
     }
     render();
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Automatisch verversen — wijzigingen van collega's verschijnen vanzelf
+  // Alleen lezen: dit haalt hetzelfde op als bij het openen van de pagina en
+  // schrijft nooit iets naar de Sheet.
+  // ══════════════════════════════════════════════════════════
+  function setSyncStatus(ok){
+    syncFailCount = ok ? 0 : syncFailCount + 1;
+    // Pas na 2 mislukte pogingen achter elkaar een waarschuwing tonen (1 haperingetje is normaal)
+    document.getElementById('syncWarning').classList.toggle('show', syncFailCount >= 2);
+  }
+
+  function renderKeepingKebab(){
+    const k = openKebabId;
+    render();
+    if(k){
+      const el = document.getElementById('kebab-' + k);
+      if(el){ el.classList.add('open'); openKebabId = k; }
+    }
+  }
+
+  async function pollOnce(){
+    if(DEMO_MODE || pollInFlight || writesInFlight > 0) return;
+    if(document.visibilityState !== 'visible') return; // verborgen tabblad: niets ophalen
+    pollInFlight = true;
+    const counterAtStart = writeCounter;
+    try {
+      const res = await apiAll(CATEGORIES.map(c => c.key));
+      if(!res.ok) throw new Error(res.error || 'Verversen mislukt');
+      // Is er tijdens het ophalen zelf iets weggeschreven? Dan kan dit antwoord verouderd zijn.
+      if(counterAtStart !== writeCounter || writesInFlight > 0) return;
+      let changed = false;
+      Object.keys(res.data).forEach(key => {
+        const c = cache[key];
+        const wasBroken = !!c.error || !c.loaded;
+        const newPool = res.data[key].pool;
+        const newArchive = res.data[key].archive;
+        if(wasBroken || JSON.stringify(newPool) !== JSON.stringify(c.pool) || JSON.stringify(newArchive) !== JSON.stringify(c.archive)){
+          c.pool = newPool;
+          c.archive = newArchive;
+          changed = true;
+        }
+        c.loaded = true;
+        c.error = null;
+      });
+      setSyncStatus(true);
+      if(changed) renderKeepingKebab(); // niets gewijzigd = niet opnieuw tekenen (geen flikkering)
+    } catch(err){
+      setSyncStatus(false);
+    } finally {
+      pollInFlight = false;
+    }
+  }
+
+  function startPolling(){
+    if(DEMO_MODE) return; // voorbeeldmodus draait lokaal, daar is niets om te verversen
+    setInterval(pollOnce, POLL_INTERVAL_MS);
+    // Zodra je terugkeert naar het tabblad (of de verbinding terugkomt) meteen bijwerken
+    document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') pollOnce(); });
+    window.addEventListener('online', pollOnce);
   }
 
   function findLocal(id){
@@ -1467,6 +1555,7 @@
   applyStaticTranslations();
   render();
   loadAllCategories();
+  startPolling();
 </script>
 </body>
 </html>
