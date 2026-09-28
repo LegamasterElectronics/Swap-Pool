@@ -893,6 +893,13 @@
     if(m) return m[1] + '"';
     m = s.match(/^(\d{2})\d{2}PLUS/);
     if(m) return m[1] + '"';
+    // Oudere series (Supreme / STX / XTX): cijferreeks met een letter op positie 7,
+    // waarbij cijfer 3 en 4 de maat zijn (bijv. 046529A130002 -> 65").
+    m = s.match(/^\d{2}(\d{2})\d{2}[A-Z]/);
+    if(m) return m[1] + '"';
+    // Panorama: PAN + 3 cijfers (bijv. PAN105002310010012 -> 105").
+    m = s.match(/^PAN(\d{3})/);
+    if(m) return m[1] + '"';
     return '—';
   }
   function copyToClipboard(text){
