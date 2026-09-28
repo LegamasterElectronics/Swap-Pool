@@ -33,6 +33,18 @@
      zo vraagt de browser niet om het wachtwoord op te slaan. Zonder ondersteuning: zie init. */
   .secret-input{-webkit-text-security:disc;}
 
+  .saving-chip{
+    display:none;position:fixed;left:20px;bottom:20px;z-index:30;background:var(--navy);color:#fff;
+    padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.2);
+  }
+  .saving-chip.show{display:block;}
+  .debug-box{
+    position:fixed;right:12px;bottom:12px;z-index:40;background:rgba(28,37,48,.92);color:#fff;font-family:'Roboto Mono',monospace;
+    font-size:11px;line-height:1.5;padding:8px 10px;border-radius:8px;
+  }
+  tbody tr.row-pending{opacity:.65;}
+  .pending-note{color:var(--muted);font-size:12px;font-style:italic;}
+
   .sync-warning{
     display:none;background:var(--warn-bg);color:var(--warn);text-align:center;font-size:12.5px;font-weight:700;
     padding:8px 16px;border-bottom:1px solid #f0c9c5;
@@ -347,6 +359,8 @@
   </div>
 </div>
 
+<div class="saving-chip" id="savingChip"></div>
+<div class="debug-box" id="debugBox" style="display:none;"></div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -370,6 +384,9 @@
   // ══════════════════════════════════════════════════════════
   const LANG = {
     nl: {
+      saving_pending: 'Opslaan… ({n})',
+      saving_short: 'Opslaan…',
+      err_save_failed: 'Opslaan mislukt ({reason}). De lijst wordt bijgewerkt; controleer de huidige stand.',
       err_not_applied: 'De server gaf een onverwacht antwoord en de actie is niet doorgevoerd. Probeer het opnieuw.',
       err_unconfirmed: 'De server gaf een onverwacht antwoord en het is niet te controleren of de actie is gelukt. Ververs de pagina en kijk na voordat je het opnieuw probeert.',
       modal_restore_title: 'Terugzetten in pool',
@@ -431,6 +448,9 @@
       item_fallback: 'Item', title_copy: 'Klik om te kopiëren',
     },
     de: {
+      saving_pending: 'Wird gespeichert… ({n})',
+      saving_short: 'Wird gespeichert…',
+      err_save_failed: 'Speichern fehlgeschlagen ({reason}). Die Liste wird aktualisiert; bitte den aktuellen Stand prüfen.',
       err_not_applied: 'Der Server hat unerwartet geantwortet und die Aktion wurde nicht ausgeführt. Bitte erneut versuchen.',
       err_unconfirmed: 'Der Server hat unerwartet geantwortet und es lässt sich nicht prüfen, ob die Aktion geklappt hat. Seite neu laden und nachsehen, bevor du es erneut versuchst.',
       modal_restore_title: 'In den Pool zurücksetzen',
@@ -491,6 +511,9 @@
       item_fallback: 'Artikel', title_copy: 'Zum Kopieren klicken',
     },
     en: {
+      saving_pending: 'Saving… ({n})',
+      saving_short: 'Saving…',
+      err_save_failed: 'Saving failed ({reason}). The list is being refreshed; please check the current state.',
       err_not_applied: 'The server gave an unexpected reply and the action was not carried out. Please try again.',
       err_unconfirmed: 'The server gave an unexpected reply and it could not be checked whether the action worked. Reload the page and check before trying again.',
       modal_restore_title: 'Return to pool',
@@ -551,6 +574,9 @@
       item_fallback: 'Item', title_copy: 'Click to copy',
     },
     fy: {
+      saving_pending: 'Bewarje… ({n})',
+      saving_short: 'Bewarje…',
+      err_save_failed: 'Bewarjen mislearre ({reason}). De list wurdt bywurke; kontrolearje de hjoeddeiske steat.',
       err_not_applied: 'De server joech in ûnferwacht antwurd en de aksje is net útfierd. Probearje it nochris.',
       err_unconfirmed: 'De server joech in ûnferwacht antwurd en it is net te kontrolearjen oft de aksje slagge is. Fernij de side en kontrolearje it foardat it opnij probearre wurdt.',
       modal_restore_title: 'Weromsette yn de pool',
@@ -699,6 +725,15 @@
   let writesInFlight = 0;   // aantal schrijfacties dat nu nog loopt
   let syncFailCount = 0;    // aantal mislukte verversingen achter elkaar
 
+  // Schrijfacties op de achtergrond: de pagina toont een wijziging meteen en stuurt haar daarna
+  // in volgorde naar de server. Zo hoef je niet te wachten op de (soms trage) server.
+  let pendingWrites = 0;    // aantal acties dat nog wacht op bevestiging van de server
+  let writeChain = Promise.resolve();
+  let needsResync = false;  // na een mislukte actie: lijst opnieuw ophalen zodra alles klaar is
+  let tmpCounter = 0;
+  const DEBUG = new URLSearchParams(location.search).has('debug');
+  const timings = [];       // laatste metingen van serververzoeken (zichtbaar met ?debug)
+
   let pendingReserveId = null;
   let pendingDeliverId = null;
   let pendingDeleteId = null;
@@ -737,8 +772,23 @@
       keys.forEach(k => { data[k] = JSON.parse(JSON.stringify({ pool: demoStore[k].pool, archive: demoStore[k].archive })); });
       return { ok: true, data };
     }
-    const res = await fetch(`${API_URL}?action=all&categorie=${keys.join(',')}`).then(r => r.json());
-    return res;
+    const t0 = Date.now();
+    try {
+      return await fetch(`${API_URL}?action=all&categorie=${keys.join(',')}`).then(r => r.json());
+    } finally {
+      recordTiming('lezen', Date.now() - t0);
+    }
+  }
+
+  function recordTiming(label, ms){
+    timings.unshift({ label, ms });
+    if(timings.length > 8) timings.length = 8;
+    console.info(`[swappool] ${label}: ${(ms / 1000).toFixed(1)} s`);
+    const box = document.getElementById('debugBox');
+    if(DEBUG && box){
+      box.style.display = 'block';
+      box.innerHTML = timings.map(x => `${escapeHtml(x.label)}: <b>${(x.ms / 1000).toFixed(1)} s</b>`).join('<br>');
+    }
   }
 
   async function apiPost(body){
@@ -749,11 +799,13 @@
     // die actie is opgehaald genegeerd kan worden (anders draait hij de wijziging terug).
     const isWrite = body.action !== 'auth';
     if(isWrite){ writesInFlight++; writeCounter++; }
+    const t0 = Date.now();
     try {
       const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
       return await res.json();
     } finally {
       if(isWrite){ writesInFlight--; writeCounter++; }
+      recordTiming('opslaan ' + body.action, Date.now() - t0);
     }
   }
 
@@ -763,25 +815,18 @@
   // categorie opnieuw op en kijken of het gewenste eindresultaat er staat. Zo krijg je geen valse foutmelding
   // bij een actie die wél is gelukt, en probeer je niet voor de tweede keer (bij "Nieuw item" = dubbele rij).
   function sameVal(a, b){ return String(a ?? '') === String(b ?? ''); }
-  async function apiWrite(body, verify){
+  async function apiWrite(cat, body, verify){
     let res, threw = false;
-    try { res = await apiPost(body); } catch(err){ threw = true; res = { ok: false }; }
+    try { res = await apiPost({ ...body, categorie: cat }); } catch(err){ threw = true; res = { ok: false }; }
     const odd = threw || (res.ok === false && res.error === 'Onbekende categorie');
     if(res.ok || !odd) return res;
     let verifiedNegative = false;
     if(verify){
       try {
-        const fresh = await apiAll([activeCat]);
+        const fresh = await apiAll([cat]);
         if(fresh.ok){
-          const d = fresh.data[activeCat];
-          const found = verify(d);
-          if(found){
-            cache[activeCat].pool = d.pool;
-            cache[activeCat].archive = d.archive;
-            cache[activeCat].loaded = true;
-            cache[activeCat].error = null;
-            return { ok: true, verified: true, id: found.ID };
-          }
+          const found = verify(fresh.data[cat]);
+          if(found) return { ok: true, verified: true, id: found.ID };
           verifiedNegative = true;
         }
       } catch(err){ /* controle mislukt: terugvallen op de foutmelding hieronder */ }
@@ -864,14 +909,62 @@
   // POST-wrapper voor beheeracties: voegt wachtwoord toe en logt automatisch uit
   // bij een foutmelding "Onjuist wachtwoord" (bijv. als het wachtwoord server-side
   // is gewijzigd terwijl deze sessie nog "ingelogd" was).
-  async function adminPost(body, verify){
-    const res = await apiWrite({ ...body, categorie: activeCat, password: adminPassword }, verify);
+  async function adminPost(cat, body, verify, pw){
+    const res = await apiWrite(cat, { ...body, password: pw }, verify);
     if(!res.ok && res.error === 'Onjuist wachtwoord'){
       forceLogout();
       toast(t('toast_wrong_password_logout'), true);
+      res.handled = true; // al gemeld, niet nogmaals een algemene foutmelding tonen
     }
     return res;
   }
+
+  // ── Wachtrij: schrijfacties gaan één voor één, in de volgorde van de gebruiker, naar de server ──
+  function updateSavingChip(){
+    const el = document.getElementById('savingChip');
+    if(!el) return;
+    el.textContent = t('saving_pending', { n: pendingWrites });
+    el.classList.toggle('show', pendingWrites > 0);
+  }
+  async function resyncAll(){
+    try {
+      const res = await apiAll(CATEGORIES.map(c => c.key));
+      if(res.ok){
+        Object.keys(res.data).forEach(key => {
+          cache[key].pool = res.data[key].pool;
+          cache[key].archive = res.data[key].archive;
+          cache[key].loaded = true;
+          cache[key].error = null;
+        });
+        render();
+      }
+    } catch(err){ /* lukt later via de automatische verversing */ }
+  }
+  function queueWrite(task){
+    pendingWrites++;
+    updateSavingChip();
+    const run = async () => {
+      let res;
+      try { res = await task(); } catch(err){ console.error(err); res = { ok: false, error: t('err_connection') }; }
+      pendingWrites--;
+      if(!res.ok){
+        needsResync = true;
+        if(!res.handled){
+          const reason = String(res.error || t('err_action_failed')).replace(/[.\s]+$/, '');
+          toast(t('err_save_failed', { reason }), true);
+        }
+      }
+      updateSavingChip();
+      if(pendingWrites === 0 && needsResync){ needsResync = false; await resyncAll(); }
+      return res;
+    };
+    writeChain = writeChain.then(run, run);
+    return writeChain;
+  }
+  // Nog niet opgeslagen wijzigingen? Waarschuw voordat het tabblad wordt gesloten of ververst.
+  window.addEventListener('beforeunload', ev => {
+    if(pendingWrites > 0){ ev.preventDefault(); ev.returnValue = ''; }
+  });
 
   // ══════════════════════════════════════════════════════════
   // Laden
@@ -942,7 +1035,7 @@
   }
 
   async function pollOnce(){
-    if(DEMO_MODE || pollInFlight || writesInFlight > 0) return;
+    if(DEMO_MODE || pollInFlight || writesInFlight > 0 || pendingWrites > 0) return;
     if(document.visibilityState !== 'visible') return; // verborgen tabblad: niets ophalen
     pollInFlight = true;
     const counterAtStart = writeCounter;
@@ -950,7 +1043,7 @@
       const res = await apiAll(CATEGORIES.map(c => c.key));
       if(!res.ok) throw new Error(res.error || 'Verversen mislukt');
       // Is er tijdens het ophalen zelf iets weggeschreven? Dan kan dit antwoord verouderd zijn.
-      if(counterAtStart !== writeCounter || writesInFlight > 0) return;
+      if(counterAtStart !== writeCounter || writesInFlight > 0 || pendingWrites > 0) return;
       let changed = false;
       Object.keys(res.data).forEach(key => {
         const c = cache[key];
@@ -1190,6 +1283,7 @@
     renderCatTabs();
     updateHeader();
     updateCounts();
+    updateSavingChip();
     renderTypeFilters();
     renderThead();
     closeKebab();
@@ -1273,8 +1367,8 @@
         }
         const sinceNote = (isReserved && s.GereserveerdOp) ? `<span class="since-note">${t('since_note', {date: fmtDate(s.GereserveerdOp)})}</span>` : '';
         return `
-        <tr class="${isReserved ? 'row-reserved' : ''}">
-          <td class="id-cell" data-label="${t('th_id')}">${s.ID}</td>
+        <tr class="${isReserved ? 'row-reserved' : ''}${s._pending ? ' row-pending' : ''}">
+          <td class="id-cell" data-label="${t('th_id')}">${s._pending ? '…' : s.ID}</td>
           <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
           ${maatCell}
           ${snCell}
@@ -1282,7 +1376,7 @@
           ${bjCell}
           <td data-label="${t('th_status')}"><span class="status-pill ${s.Status}"><span class="bullet"></span>${t('status_' + s.Status)}</span>${sinceNote}</td>
           <td class="notes-cell" data-label="${t('th_notitie')}">${escapeHtml(s.Notitie || '—')}</td>
-          <td data-label="${t('th_acties')}"><div class="row-actions">${primaryBtn}${adminBtns}</div></td>
+          <td data-label="${t('th_acties')}">${s._pending ? `<span class="pending-note">${t('saving_short')}</span>` : `<div class="row-actions">${primaryBtn}${adminBtns}</div>`}</td>
         </tr>`;
       } else {
         return `
@@ -1457,40 +1551,33 @@
     document.getElementById('reserveErr').textContent = '';
     openModal('reserveModal', 'reserveName');
   }
-  async function submitReserve(){
+  function submitReserve(){
     const naam = document.getElementById('reserveName').value.trim();
     const reden = document.getElementById('reserveNote').value.trim();
     const errEl = document.getElementById('reserveErr');
     if(!naam){ errEl.textContent = t('err_name_required'); return; }
     errEl.textContent = '';
     const notitie = reden ? `${naam} — ${reden}` : naam;
-    const id = pendingReserveId;
-    setBusy('reserveSubmitBtn', true, t('btn_busy'), t('btn_reserveren'));
-    const res = await apiWrite({ action: 'markReserved', categorie: activeCat, id, notitie },
-      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Gereserveerd' && sameVal(s.Notitie, notitie); });
-    setBusy('reserveSubmitBtn', false, '', t('btn_reserveren'));
-    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
+    const cat = activeCat, id = pendingReserveId;
     const item = findLocal(id);
-    if(item){ item.Status = 'Gereserveerd'; item.Notitie = notitie; item.GereserveerdOp = res.gereserveerdOp || new Date().toISOString(); }
     closeModal('reserveModal');
+    if(!item) return;
+    item.Status = 'Gereserveerd'; item.Notitie = notitie; item.GereserveerdOp = new Date().toISOString();
     render();
-    toast(t('toast_reserved', { type: item ? item.Type : t('item_fallback'), name: naam }));
+    toast(t('toast_reserved', { type: item.Type, name: naam }));
+    queueWrite(() => apiWrite(cat, { action: 'markReserved', id, notitie },
+      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Gereserveerd' && sameVal(s.Notitie, notitie); }));
   }
 
-  async function resetAvailable(id, btnEl){
+  function resetAvailable(id){
+    const cat = activeCat;
     const item = findLocal(id);
-    const orig = btnEl.textContent;
-    btnEl.disabled = true; btnEl.textContent = t('btn_busy');
-    const res = await apiWrite({ action: 'resetAvailable', categorie: activeCat, id },
-      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Beschikbaar'; });
-    if(!res.ok){
-      toast(res.error || t('err_action_failed'), true);
-      btnEl.disabled = false; btnEl.textContent = orig;
-      return;
-    }
-    if(item){ item.Status = 'Beschikbaar'; item.GereserveerdOp = ''; }
+    if(!item) return;
+    item.Status = 'Beschikbaar'; item.GereserveerdOp = '';
     render();
-    toast(t('toast_released', { type: item ? item.Type : t('item_fallback') }));
+    toast(t('toast_released', { type: item.Type }));
+    queueWrite(() => apiWrite(cat, { action: 'resetAvailable', id },
+      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Beschikbaar'; }));
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1563,7 +1650,7 @@
     const all = [...cache[activeCat].pool, ...cache[activeCat].archive];
     return all.some(s => s.ID !== excludeId && String(s.Serienummer || '').trim().toLowerCase() === sn);
   }
-  async function submitItem(){
+  function submitItem(){
     const sel = document.getElementById('itemType').value;
     const type = sel === '__other__' ? document.getElementById('itemTypeOther').value.trim() : sel;
     const serienummer = document.getElementById('itemSn').value.trim();
@@ -1575,29 +1662,35 @@
     if(!type || !serienummer){ errEl.textContent = t('err_type_sn_required'); return; }
     if(isDuplicateSerial(serienummer, editingId)){ errEl.textContent = t('err_duplicate_sn'); return; }
 
-    setBusy('itemSubmitBtn', true, t('btn_busy'), t('btn_opslaan'));
-    let res;
+    const cat = activeCat, pw = adminPassword;
     if(editingId){
       const eid = editingId;
-      res = await adminPost({ action: 'update', id: eid, type, serienummer, menummer, bouwjaar, notitie },
-        d => { const s = d.pool.find(x => x.ID === eid); return s && sameVal(s.Type, type) && sameVal(s.Serienummer, serienummer) && sameVal(s.MEnummer, menummer) && sameVal(s.Bouwjaar, bouwjaar) && sameVal(s.Notitie, notitie); });
-    } else {
-      res = await adminPost({ action: 'add', type, serienummer, menummer, bouwjaar, notitie },
-        d => d.pool.find(x => sameVal(x.Serienummer, serienummer) && sameVal(x.Type, type)));
-    }
-    setBusy('itemSubmitBtn', false, '', t('btn_opslaan'));
-    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
-
-    if(editingId){
-      const item = findLocal(editingId);
-      if(item){ item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer; item.Bouwjaar = bouwjaar || null; item.Notitie = notitie; }
+      const item = findLocal(eid);
+      closeModal('itemModal');
+      if(!item) return;
+      item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer; item.Bouwjaar = bouwjaar || null; item.Notitie = notitie;
+      render();
       toast(t('toast_updated', { type }));
+      queueWrite(() => adminPost(cat, { action: 'update', id: eid, type, serienummer, menummer, bouwjaar, notitie },
+        d => { const s = d.pool.find(x => x.ID === eid); return s && sameVal(s.Type, type) && sameVal(s.Serienummer, serienummer) && sameVal(s.MEnummer, menummer) && sameVal(s.Bouwjaar, bouwjaar) && sameVal(s.Notitie, notitie); }, pw));
     } else {
-      if(!cache[activeCat].pool.some(x => x.ID === res.id)) cache[activeCat].pool.push({ ID: res.id, Type: type, Serienummer: serienummer, MEnummer: menummer, Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie });
+      // Nieuw item verschijnt meteen (met een tijdelijk ID, nog zonder knoppen) en krijgt zijn
+      // echte ID zodra de server het heeft opgeslagen.
+      const item = { ID: 'TMP-' + (++tmpCounter), _pending: true, Type: type, Serienummer: serienummer, MEnummer: menummer,
+                     Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie };
+      cache[cat].pool.push(item);
+      closeModal('itemModal');
+      render();
       toast(t('toast_added', { type }));
+      queueWrite(async () => {
+        const res = await adminPost(cat, { action: 'add', type, serienummer, menummer, bouwjaar, notitie },
+          d => d.pool.find(x => sameVal(x.Serienummer, serienummer) && sameVal(x.Type, type)), pw);
+        if(res.ok && res.id){ item.ID = res.id; delete item._pending; }
+        else { cache[cat].pool = cache[cat].pool.filter(x => x !== item); if(res.ok) needsResync = true; }
+        render();
+        return res;
+      });
     }
-    closeModal('itemModal');
-    render();
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1613,32 +1706,23 @@
     document.getElementById('deliverErr').textContent = '';
     openModal('deliverModal', 'delTicket');
   }
-  async function submitDeliver(){
+  function submitDeliver(){
     const ticket = document.getElementById('delTicket').value.trim();
     const klant = document.getElementById('delKlant').value.trim();
     const errEl = document.getElementById('deliverErr');
     if(!ticket){ errEl.textContent = t('err_ticket_required'); return; }
     errEl.textContent = '';
-    const id = pendingDeliverId;
-    setBusy('deliverSubmitBtn', true, t('btn_busy'), t('btn_bevestigen'));
-    const typeBefore = (findLocal(id) || {}).Type;
-    const res = await adminPost({ action: 'deliver', id, ticket, klant },
-      d => { const s = d.archive.find(x => x.ID === id); return s && sameVal(s.Ticket, ticket); });
-    setBusy('deliverSubmitBtn', false, '', t('btn_bevestigen'));
-    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
-    const idx = cache[activeCat].pool.findIndex(s => s.ID === id);
-    let typeName = typeBefore || t('item_fallback');
-    if(idx > -1){
-      const [item] = cache[activeCat].pool.splice(idx, 1);
-      item.UitgeleverdOp = new Date().toISOString();
-      item.Ticket = ticket;
-      item.Klant = klant;
-      cache[activeCat].archive.unshift(item);
-      typeName = item.Type;
-    }
+    const cat = activeCat, id = pendingDeliverId, pw = adminPassword;
+    const idx = cache[cat].pool.findIndex(s => s.ID === id);
     closeModal('deliverModal');
+    if(idx === -1) return;
+    const [item] = cache[cat].pool.splice(idx, 1);
+    item.UitgeleverdOp = new Date().toISOString(); item.Ticket = ticket; item.Klant = klant;
+    cache[cat].archive.unshift(item);
     render();
-    toast(t('toast_delivered', { type: typeName, ticket }));
+    toast(t('toast_delivered', { type: item.Type, ticket }));
+    queueWrite(() => adminPost(cat, { action: 'deliver', id, ticket, klant },
+      d => { const s = d.archive.find(x => x.ID === id); return s && sameVal(s.Ticket, ticket); }, pw));
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1655,24 +1739,18 @@
     document.getElementById('restoreErr').textContent = '';
     openModal('restoreModal', null);
   }
-  async function submitRestore(){
-    const id = pendingRestoreId;
-    const item = findArchived(id);
-    const errEl = document.getElementById('restoreErr');
-    setBusy('restoreSubmitBtn', true, t('btn_busy'), t('btn_restore'));
-    const res = await adminPost({ action: 'restore', id },
-      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Beschikbaar'; });
-    setBusy('restoreSubmitBtn', false, '', t('btn_restore'));
-    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
-    const idx = cache[activeCat].archive.findIndex(s => s.ID === id);
-    if(idx > -1){
-      const [it] = cache[activeCat].archive.splice(idx, 1);
-      it.Status = 'Beschikbaar'; it.UitgeleverdOp = ''; it.Ticket = ''; it.Klant = ''; it.GereserveerdOp = '';
-      cache[activeCat].pool.push(it);
-    }
+  function submitRestore(){
+    const cat = activeCat, id = pendingRestoreId, pw = adminPassword;
+    const idx = cache[cat].archive.findIndex(s => s.ID === id);
     closeModal('restoreModal');
+    if(idx === -1) return;
+    const [item] = cache[cat].archive.splice(idx, 1);
+    item.Status = 'Beschikbaar'; item.UitgeleverdOp = ''; item.Ticket = ''; item.Klant = ''; item.GereserveerdOp = '';
+    cache[cat].pool.push(item);
     render();
-    toast(t('toast_restored', { type: item ? item.Type : t('item_fallback') }));
+    toast(t('toast_restored', { type: item.Type }));
+    queueWrite(() => adminPost(cat, { action: 'restore', id },
+      d => { const s = d.pool.find(x => x.ID === id); return s && s.Status === 'Beschikbaar'; }, pw));
   }
 
   // ══════════════════════════════════════════════════════════
@@ -1686,20 +1764,17 @@
     document.getElementById('deleteErr').textContent = '';
     openModal('deleteModal', null);
   }
-  async function submitDelete(){
-    const id = pendingDeleteId;
+  function submitDelete(){
+    const cat = activeCat, id = pendingDeleteId, pw = adminPassword;
     const item = findLocal(id) || findArchived(id);
-    const errEl = document.getElementById('deleteErr');
-    setBusy('deleteSubmitBtn', true, t('btn_busy'), t('btn_verwijderen'));
-    const res = await adminPost({ action: 'delete', id },
-      d => !d.pool.some(x => x.ID === id) && !d.archive.some(x => x.ID === id) ? { ID: id } : null);
-    setBusy('deleteSubmitBtn', false, '', t('btn_verwijderen'));
-    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
-    cache[activeCat].pool = cache[activeCat].pool.filter(s => s.ID !== id);
-    cache[activeCat].archive = cache[activeCat].archive.filter(s => s.ID !== id);
     closeModal('deleteModal');
+    if(!item) return;
+    cache[cat].pool = cache[cat].pool.filter(s => s.ID !== id);
+    cache[cat].archive = cache[cat].archive.filter(s => s.ID !== id);
     render();
-    toast(t('toast_deleted', { type: item ? item.Type : t('item_fallback') }));
+    toast(t('toast_deleted', { type: item.Type }));
+    queueWrite(() => adminPost(cat, { action: 'delete', id },
+      d => !d.pool.some(x => x.ID === id) && !d.archive.some(x => x.ID === id) ? { ID: id } : null, pw));
   }
 
   // ══════════════════════════════════════════════════════════
