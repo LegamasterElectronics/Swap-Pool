@@ -29,6 +29,10 @@
   }
   body.demo .demo-banner{display:block;}
 
+  /* Wachtwoordveld dat er als wachtwoord uitziet, maar voor de browser een gewoon tekstveld is:
+     zo vraagt de browser niet om het wachtwoord op te slaan. Zonder ondersteuning: zie init. */
+  .secret-input{-webkit-text-security:disc;}
+
   .sync-warning{
     display:none;background:var(--warn-bg);color:var(--warn);text-align:center;font-size:12.5px;font-weight:700;
     padding:8px 16px;border-bottom:1px solid #f0c9c5;
@@ -246,7 +250,7 @@
   <div class="modal">
     <h2 data-i18n="modal_login_title">Beheerder inloggen</h2>
     <label data-i18n="label_password">Wachtwoord</label>
-    <input type="password" id="loginPw" autocomplete="current-password">
+    <input type="text" id="loginPw" class="secret-input" name="swappool-beheerdercode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-bwignore data-form-type="other">
     <div class="modal-error" id="loginErr"></div>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closeModal('loginModal')" data-i18n="btn_annuleren">Annuleren</button>
@@ -314,6 +318,20 @@
   </div>
 </div>
 
+<!-- Restore dialog — Beheerder only -->
+<div class="modal-backdrop" id="restoreModal">
+  <div class="modal">
+    <h2 data-i18n="modal_restore_title">Terugzetten in pool</h2>
+    <div class="modal-item-ref" id="restoreItemRef"></div>
+    <p style="font-size:13px;margin:14px 0 0;" data-i18n="restore_confirm_text">Dit zet het item terug in de pool als "Beschikbaar". De uitlevergegevens (datum, ticket en klant) worden gewist.</p>
+    <div class="modal-error" id="restoreErr"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('restoreModal')" data-i18n="btn_annuleren">Annuleren</button>
+      <button class="btn-primary" id="restoreSubmitBtn" onclick="submitRestore()" data-i18n="btn_restore">Terugzetten</button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete confirmation dialog — Beheerder only -->
 <div class="modal-backdrop" id="deleteModal">
   <div class="modal danger-modal">
@@ -351,6 +369,10 @@
   // ══════════════════════════════════════════════════════════
   const LANG = {
     nl: {
+      modal_restore_title: 'Terugzetten in pool',
+      restore_confirm_text: 'Dit zet het item terug in de pool als "Beschikbaar". De uitlevergegevens (datum, ticket en klant) worden gewist.',
+      btn_restore: 'Terugzetten',
+      toast_restored: '{type} teruggezet in de pool.',
       sync_offline: 'Geen verbinding met de server — de getoonde gegevens zijn mogelijk verouderd.',
       demo_banner: 'Voorbeeldmodus — dit is testdata, er wordt niets opgeslagen.',
       admin_readonly_badge: 'Alleen bekijken en reserveren',
@@ -406,6 +428,10 @@
       item_fallback: 'Item', title_copy: 'Klik om te kopiëren',
     },
     de: {
+      modal_restore_title: 'In den Pool zurücksetzen',
+      restore_confirm_text: 'Damit wird der Artikel als "Verfügbar" in den Pool zurückgesetzt. Die Auslieferungsdaten (Datum, Ticket und Kunde) werden gelöscht.',
+      btn_restore: 'Zurücksetzen',
+      toast_restored: '{type} in den Pool zurückgesetzt.',
       sync_offline: 'Keine Verbindung zum Server — die angezeigten Daten sind möglicherweise veraltet.',
       demo_banner: 'Testmodus — dies sind Testdaten, es wird nichts gespeichert.',
       admin_readonly_badge: 'Nur ansehen und reservieren',
@@ -460,6 +486,10 @@
       item_fallback: 'Artikel', title_copy: 'Zum Kopieren klicken',
     },
     en: {
+      modal_restore_title: 'Return to pool',
+      restore_confirm_text: 'This puts the item back in the pool as "Available". The delivery details (date, ticket and customer) will be cleared.',
+      btn_restore: 'Return to pool',
+      toast_restored: '{type} returned to the pool.',
       sync_offline: 'No connection to the server — the data shown may be out of date.',
       demo_banner: 'Demo mode — this is test data, nothing is saved.',
       admin_readonly_badge: 'View and reserve only',
@@ -514,6 +544,10 @@
       item_fallback: 'Item', title_copy: 'Click to copy',
     },
     fy: {
+      modal_restore_title: 'Weromsette yn de pool',
+      restore_confirm_text: 'Dit set it item werom yn de pool as "Beskikber". De leveringsgegevens (datum, ticket en klant) wurde wiske.',
+      btn_restore: 'Weromsette',
+      toast_restored: '{type} weromset yn de pool.',
       sync_offline: 'Gjin ferbining mei de server — de werjûne gegevens binne miskien ferâldere.',
       demo_banner: 'Foarbyldmodus — dit is testdata, der wurdt neat bewarre.',
       admin_readonly_badge: 'Allinnich sjen en reservearje',
@@ -659,6 +693,7 @@
   let pendingReserveId = null;
   let pendingDeliverId = null;
   let pendingDeleteId = null;
+  let pendingRestoreId = null;
   let editingId = null; // null => "add" dialoog, anders "bewerk" dialoog
 
   const cache = {};
@@ -690,7 +725,7 @@
   async function apiAll(keys){
     if(DEMO_MODE){
       const data = {};
-      keys.forEach(k => { data[k] = { pool: demoStore[k].pool, archive: demoStore[k].archive }; });
+      keys.forEach(k => { data[k] = JSON.parse(JSON.stringify({ pool: demoStore[k].pool, archive: demoStore[k].archive })); });
       return { ok: true, data };
     }
     const res = await fetch(`${API_URL}?action=all&categorie=${keys.join(',')}`).then(r => r.json());
@@ -763,6 +798,14 @@
         item.Klant = body.klant || '';
         demoStore[cat].archive.unshift(item);
       }
+      return { ok: true };
+    }
+    if(body.action === 'restore'){
+      const idx = demoStore[cat].archive.findIndex(s => s.ID === body.id);
+      if(idx === -1) return { ok: false, error: 'Item is niet uitgeleverd' };
+      const [item] = demoStore[cat].archive.splice(idx, 1);
+      item.Status = 'Beschikbaar'; item.UitgeleverdOp = ''; item.Ticket = ''; item.Klant = ''; item.GereserveerdOp = '';
+      demoStore[cat].pool.push(item);
       return { ok: true };
     }
     if(body.action === 'update'){
@@ -1074,6 +1117,7 @@
       cells += sortTh('Status', t('th_status')) + `<th>${t('th_notitie')}</th><th>${t('th_acties')}</th>`;
     } else {
       cells += sortTh('UitgeleverdOp', t('th_uitgeleverd_op')) + sortTh('Ticket', t('th_ticket')) + sortTh('Klant', t('th_klant'));
+      if(isAdmin) cells += `<th>${t('th_acties')}</th>`;
     }
     cells += '</tr>';
     document.getElementById('theadRow').innerHTML = cells;
@@ -1205,6 +1249,7 @@
           <td data-label="${t('th_uitgeleverd_op')}">${fmtDate(s.UitgeleverdOp)}</td>
           <td data-label="${t('th_ticket')}">${escapeHtml(s.Ticket || '—')}</td>
           <td data-label="${t('th_klant')}">${escapeHtml(s.Klant || '—')}</td>
+          ${isAdmin ? `<td data-label="${t('th_acties')}"><div class="row-actions"><button onclick="openRestoreModal('${s.ID}')">${t('btn_restore')}</button></div></td>` : ''}
         </tr>`;
       }
     }).join('');
@@ -1312,6 +1357,7 @@
   function becomeAdmin(pw){
     isAdmin = true;
     adminPassword = pw;
+    document.getElementById('loginPw').value = ''; // niet in het veld laten staan
     document.getElementById('adminBtn').textContent = t('admin_logout_btn');
     document.getElementById('adminBadge').textContent = t('admin_badge_on');
     document.getElementById('adminBadge').classList.add('on');
@@ -1524,6 +1570,39 @@
   }
 
   // ══════════════════════════════════════════════════════════
+  // Terugzetten uit het archief — Beheerder only (bijv. na een vergissing bij uitleveren)
+  // ══════════════════════════════════════════════════════════
+  function findArchived(id){
+    return cache[activeCat].archive.find(s => s.ID === id);
+  }
+  function openRestoreModal(id){
+    const item = findArchived(id);
+    if(!item) return;
+    pendingRestoreId = id;
+    document.getElementById('restoreItemRef').innerHTML = itemRefHtml(item);
+    document.getElementById('restoreErr').textContent = '';
+    openModal('restoreModal', null);
+  }
+  async function submitRestore(){
+    const id = pendingRestoreId;
+    const item = findArchived(id);
+    const errEl = document.getElementById('restoreErr');
+    setBusy('restoreSubmitBtn', true, t('btn_busy'), t('btn_restore'));
+    const res = await adminPost({ action: 'restore', id });
+    setBusy('restoreSubmitBtn', false, '', t('btn_restore'));
+    if(!res.ok){ errEl.textContent = res.error === 'Onjuist wachtwoord' ? t('err_wrong_password') : (res.error || t('err_action_failed')); return; }
+    const idx = cache[activeCat].archive.findIndex(s => s.ID === id);
+    if(idx > -1){
+      const [it] = cache[activeCat].archive.splice(idx, 1);
+      it.Status = 'Beschikbaar'; it.UitgeleverdOp = ''; it.Ticket = ''; it.Klant = ''; it.GereserveerdOp = '';
+      cache[activeCat].pool.push(it);
+    }
+    closeModal('restoreModal');
+    render();
+    toast(t('toast_restored', { type: item ? item.Type : t('item_fallback') }));
+  }
+
+  // ══════════════════════════════════════════════════════════
   // Verwijderen — eigen bevestigingsdialoog, Beheerder only
   // ══════════════════════════════════════════════════════════
   function openDeleteModal(id){
@@ -1551,6 +1630,10 @@
   // ══════════════════════════════════════════════════════════
   // Init
   // ══════════════════════════════════════════════════════════
+  // Browsers zonder -webkit-text-security tonen anders leesbare tekst: dan terug naar een echt wachtwoordveld.
+  if(!(window.CSS && CSS.supports && CSS.supports('-webkit-text-security', 'disc'))){
+    document.getElementById('loginPw').type = 'password';
+  }
   renderLangSwitch();
   applyStaticTranslations();
   render();
