@@ -1165,6 +1165,14 @@
     if(isNaN(d)) return '—';
     return d.toLocaleDateString('nl-NL');
   }
+  // Voor uitleverdata: datum + tijd, zodat je op de dag zelf kunt zien in welke volgorde
+  // schermen zijn uitgeleverd (bijv. bij meerdere leveringen op dezelfde dag).
+  function fmtDateTime(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    return d.toLocaleDateString('nl-NL') + ' ' + d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  }
   // Leidt de schermmaat (in inch) af uit het serienummer — dit wordt nergens los
   // opgeslagen, want staat altijd al verwerkt in het serienummer zelf.
   // bijv. ETX651019060029 -> "65"; DIS551024050868066 -> "55"; 6520PLUS21110020 -> "65"
@@ -1398,7 +1406,7 @@
           ${snCell}
           ${meCell}
           ${bjCell}
-          <td data-label="${t('th_uitgeleverd_op')}">${fmtDate(s.UitgeleverdOp)}</td>
+          <td data-label="${t('th_uitgeleverd_op')}">${fmtDateTime(s.UitgeleverdOp)}</td>
           <td data-label="${t('th_ticket')}">${escapeHtml(s.Ticket || '—')}</td>
           <td data-label="${t('th_klant')}">${escapeHtml(s.Klant || '—')}</td>
           ${isAdmin ? `<td data-label="${t('th_acties')}"><div class="row-actions"><button onclick="openRestoreModal('${s.ID}')">${t('btn_restore')}</button><button class="danger-action" onclick="openDeleteModal('${s.ID}')">${t('btn_verwijderen')}</button></div></td>` : ''}
@@ -1551,7 +1559,7 @@
   // ══════════════════════════════════════════════════════════
   function itemRefHtml(item){
     const delivered = item.UitgeleverdOp
-      ? `<span class="mi-sn" style="display:block;">${t('th_uitgeleverd_op')}: ${fmtDate(item.UitgeleverdOp)} · ${escapeHtml(item.Ticket || '—')} · ${escapeHtml(item.Klant || '—')}</span>`
+      ? `<span class="mi-sn" style="display:block;">${t('th_uitgeleverd_op')}: ${fmtDateTime(item.UitgeleverdOp)} · ${escapeHtml(item.Ticket || '—')} · ${escapeHtml(item.Klant || '—')}</span>`
       : '';
     return `<span class="mi-type">${escapeHtml(item.Type)}</span><span class="mi-sn">SN: ${escapeHtml(item.Serienummer)} · ME: ${escapeHtml(item.MEnummer)}</span>${delivered}`;
   }
