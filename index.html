@@ -720,7 +720,8 @@
   // ══════════════════════════════════════════════════════════
   let activeCat = 'screens';
   let activeTab = 'pool';
-  let sortKey = null;
+  let sortKey = 'Type'; // standaard gegroepeerd op type, zodat gelijke schermen bij elkaar staan
+  let sortDirDefault = 'asc';
   let sortDir = 'asc';
   let counterFilter = null; // null | 'Beschikbaar' | 'Gereserveerd'
   let typeFilter = null; // null | een specifieke Type-waarde
@@ -1111,7 +1112,7 @@
   function switchCategory(key){
     activeCat = key;
     activeTab = 'pool';
-    sortKey = null;
+    sortKey = 'Type'; sortDir = sortDirDefault;
     counterFilter = null;
     typeFilter = null;
     document.getElementById('search').value = '';
@@ -1120,7 +1121,7 @@
 
   function switchTab(tab){
     activeTab = tab;
-    sortKey = null;
+    sortKey = 'Type'; sortDir = sortDirDefault;
     if(tab === 'pool') counterFilter = null;
     render();
   }
