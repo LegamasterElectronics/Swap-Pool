@@ -745,6 +745,7 @@
   let tmpCounter = 0;
   const DEBUG = new URLSearchParams(location.search).has('debug');
   const timings = [];       // laatste metingen van serververzoeken (zichtbaar met ?debug)
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   let pendingReserveId = null;
   let pendingDeliverId = null;
@@ -784,12 +785,26 @@
       keys.forEach(k => { data[k] = JSON.parse(JSON.stringify({ pool: demoStore[k].pool, archive: demoStore[k].archive })); });
       return { ok: true, data };
     }
+    // Apps Script hapert af en toe kort, vooral nu er meerdere mensen tegelijk in de Sheet
+    // werken. Eén blip zou dan meteen de "geen verbinding"-melding laten zien, dus eerst
+    // een paar keer stil opnieuw proberen voordat we dat concluderen.
+    const url = `${API_URL}?action=all&categorie=${keys.join(',')}`;
     const t0 = Date.now();
-    try {
-      return await fetch(`${API_URL}?action=all&categorie=${keys.join(',')}`).then(r => r.json());
-    } finally {
-      recordTiming('lezen', Date.now() - t0);
+    let lastRes = null, lastErr = null;
+    for(let i = 0; i < 3; i++){
+      if(i > 0) await sleep(600 * i);
+      try {
+        const res = await fetch(url).then(r => r.json());
+        if(res && res.ok){
+          recordTiming('lezen' + (i > 0 ? ` (na ${i + 1}e poging)` : ''), Date.now() - t0);
+          return res;
+        }
+        lastRes = res;
+      } catch(err){ lastErr = err; }
     }
+    recordTiming('lezen mislukt (3 pogingen)', Date.now() - t0);
+    if(lastRes) return lastRes; // laat de echte serverfout zien i.p.v. iets te verzinnen
+    throw lastErr || new Error('fetch failed');
   }
 
   function recordTiming(label, ms){
