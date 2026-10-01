@@ -10,16 +10,44 @@
 <style>
   :root {
     --navy: #00368e; --accent: #f39325; --accent-dark: #d97e14; --cyan: #19b0e4;
-    --paper: #f6f7f9; --line: #d9dee3; --radius: 8px;
-    --text: #1c2530; --muted: #64748b;
-    --ok: #1a7a45; --ok-bg: #e8f6ee;
+    --paper: #ffffff; --line: #d7e0ec; --radius: 8px;
+    --text: #101828; --muted: #5b6b82;
+    --ok: #15803d; --ok-bg: #e8f5ec;
     --warn: #b3261e; --warn-bg: #fdecea;
-    --grey-bg: #eef0f3;
+    --grey-bg: #f3f6fa;
     --demo: #a15c00; --demo-bg: #fff4d9;
+
+    /* ── shadcn-naamgeving, als alias bovenop bovenstaande — zelfde waarden, alleen de
+       namen volgen de shadcn/ui-conventie. Bestaande regels blijven de oude namen
+       gebruiken, dus dit voegt alleen een laag toe, er wordt niets herschreven.
+       Let op: shadcn's eigen "--accent" betekent iets anders (een subtiele hover-
+       achtergrond) dan ons bestaande --accent (de oranje actieknop-kleur). Om die
+       verwarring te voorkomen is ons oranje hier aan --primary gekoppeld, de
+       shadcn-term die daadwerkelijk voor een merk-/actiekleur bedoeld is. ──────── */
+    --background: var(--paper);
+    --foreground: var(--text);
+    --card: #ffffff;
+    --card-foreground: var(--text);
+    --primary: var(--accent);
+    --primary-hover: var(--accent-dark);
+    --primary-foreground: #ffffff;
+    --secondary: var(--navy);
+    --secondary-foreground: #ffffff;
+    --muted-foreground: var(--muted);
+    --border: var(--line);
+    --destructive: var(--warn);
+    --destructive-bg: var(--warn-bg);
+    --destructive-foreground: #ffffff;
+    --success: var(--ok);
+    --success-bg: var(--ok-bg);
+    --radius-sm: 4px;
+    --radius-md: var(--radius);
+    --radius-lg: 12px; /* nog los beschikbaar; de modal gebruikt voortaan 4px, zie .modal */
+    --radius-full: 999px;
   }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--paper); color: var(--text); font-size: 13px; }
-  .mono { font-family: 'Roboto Mono', ui-monospace, Menlo, monospace; }
+  .mono { font-family: 'Roboto Mono', ui-monospace, Menlo, monospace; letter-spacing: .02em; }
   .wrap{max-width:1280px;margin:0 auto;padding:0 20px 90px;}
 
   /* ── Demo-mode banner ───────────────────────────────────── */
@@ -35,12 +63,12 @@
 
   .saving-chip{
     display:none;position:fixed;left:20px;bottom:20px;z-index:30;background:var(--navy);color:#fff;
-    padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.2);
+    padding:9px 16px;border-radius:var(--radius-full);font-size:12.5px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.2);
   }
   .saving-chip.show{display:block;}
   .debug-box{
     position:fixed;right:12px;bottom:12px;z-index:40;background:rgba(28,37,48,.92);color:#fff;font-family:'Roboto Mono',monospace;
-    font-size:11px;line-height:1.5;padding:8px 10px;border-radius:8px;
+    font-size:11px;line-height:1.5;padding:8px 10px;border-radius:var(--radius-md);
   }
   tbody tr.row-pending{opacity:.65;}
   .pending-note{color:var(--muted);font-size:12px;font-style:italic;}
@@ -52,25 +80,26 @@
   .sync-warning.show{display:block;}
 
   /* ── Top bar ────────────────────────────────────────────── */
-  .topbar{background:var(--navy);color:#fff;}
+  .topbar{background:#fff;color:var(--text);border-bottom:2px solid var(--text);}
   .topbar-inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;}
-  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--cyan);}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:900;font-size:17px;}
+  .brand .dot{width:12px;height:12px;border-radius:2px;background:var(--navy);}
+  .version-badge{font-size:10.5px;font-weight:400;color:var(--muted);margin-left:4px;}
   .admin-area{display:flex;align-items:center;gap:8px;}
-  .admin-area .lang-switch{display:flex;gap:2px;background:rgba(255,255,255,0.12);border-radius:8px;padding:2px;}
+  .admin-area .lang-switch{display:flex;gap:2px;background:var(--grey-bg);border-radius:var(--radius-md);padding:2px;}
   .admin-area .lang-switch button{
-    background:transparent;color:rgba(255,255,255,0.75);border:none;
-    padding:5px 9px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;
+    background:transparent;color:var(--muted);border:none;
+    padding:5px 9px;border-radius:var(--radius-sm);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;
   }
-  .admin-area .lang-switch button.active{background:var(--accent);color:#fff;}
-  .admin-area .lang-switch button:hover{color:#fff;}
-  .admin-badge{font-size:12px;font-weight:500;opacity:0.9;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,0.12);}
-  .admin-badge.on{background:var(--accent);opacity:1;font-weight:700;}
+  .admin-area .lang-switch button.active{background:var(--navy);color:#fff;}
+  .admin-area .lang-switch button:hover{color:var(--navy);}
+  .admin-badge{font-size:12px;font-weight:500;padding:4px 10px;border-radius:var(--radius-full);background:var(--grey-bg);color:var(--muted);}
+  .admin-badge.on{background:var(--navy);color:#fff;font-weight:700;}
   .admin-area button{
-    background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.35);
-    padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;
+    background:#fff;color:var(--navy);border:1px solid var(--line);
+    padding:7px 14px;border-radius:var(--radius-md);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;
   }
-  .admin-area button:hover{opacity:0.9;}
+  .admin-area button:hover{border-color:var(--navy);}
 
   /* ── Category tabs ──────────────────────────────────────── */
   .cattabs{background:#fff;border-bottom:1px solid var(--line);}
@@ -80,7 +109,7 @@
     color:var(--muted);cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;
   }
   .cattabs button .n{font-weight:500;color:var(--muted);margin-left:3px;}
-  .cattabs button.active{color:var(--navy);border-bottom-color:var(--accent);}
+  .cattabs button.active{color:var(--navy);border-bottom-color:var(--navy);}
   .cattabs button:hover{color:var(--navy);}
 
   /* ── Header ─────────────────────────────────────────────── */
@@ -88,7 +117,7 @@
   h1{font-size:22px;margin:0;font-weight:700;color:var(--navy);}
   .counts{display:flex;gap:8px;flex-wrap:wrap;}
   .count-tag{
-    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:var(--radius-full);
     border:1.5px solid transparent;cursor:pointer;font-family:inherit;background:none;
   }
   .count-tag .bullet{width:7px;height:7px;border-radius:50%;background:currentColor;}
@@ -102,7 +131,7 @@
   .type-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
   .type-filters:empty{margin-bottom:0;}
   .type-chip{
-    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;
+    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:var(--radius-full);
     border:1.5px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-family:inherit;
   }
   .type-chip:hover{border-color:var(--navy);color:var(--navy);}
@@ -114,21 +143,26 @@
   .type-chip.zero.active-filter{color:#fff;border-color:var(--navy);background:var(--navy);}
 
   /* ── Sub-tabs (Pool / Archief) ──────────────────────────── */
-  .tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--grey-bg);padding:4px;border-radius:var(--radius);width:fit-content;}
-  .tabs button{font-size:13px;font-weight:700;padding:8px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-family:inherit;}
-  .tabs button.active{background:#fff;color:var(--navy);box-shadow:0 1px 2px rgba(0,0,0,.06);}
+  .tabs{position:relative;display:flex;gap:4px;margin-bottom:20px;background:var(--grey-bg);padding:4px;border-radius:var(--radius);width:fit-content;}
+  .tabs button{position:relative;z-index:1;font-size:13px;font-weight:700;padding:8px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:var(--radius-sm);font-family:inherit;transition:color .15s ease;}
+  .tabs button.active{color:var(--navy);}
+  .tabs .tab-pill{position:absolute;top:4px;bottom:4px;left:0;background:#fff;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,.06);transition:transform .22s cubic-bezier(.22,.9,.3,1.1),width .22s cubic-bezier(.22,.9,.3,1.1);}
 
   /* ── Toolbar ────────────────────────────────────────────── */
-  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;}
-  .toolbar input[type=text]{padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;min-width:260px;background:#fff;}
-  .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;}
+  .panel .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0;padding:13px 18px;background:var(--grey-bg);border-bottom:1px solid var(--line);}
+  .panel .table-scroll{border:none;border-radius:0;}
+  .toolbar input[type=text]{padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-md);font-size:13px;font-family:inherit;min-width:260px;background:#fff;}
+  .btn-primary{background:var(--navy);color:#fff;border:none;border-radius:var(--radius-md);padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:transform .08s ease,background .12s ease;}
+  .btn-primary:active{transform:scale(.97);}
+  .btn-primary:hover{background:#00256b;}
   .btn-primary:hover{background:var(--accent-dark);}
   .btn-primary:disabled{opacity:0.6;cursor:default;}
 
   /* ── Table ──────────────────────────────────────────────── */
   .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:#fff;}
   table{width:100%;border-collapse:collapse;min-width:920px;}
-  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);font-weight:700;padding:10px 14px;background:var(--grey-bg);border-bottom:1px solid var(--line);white-space:nowrap;}
+  thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:700;padding:10px 18px;border-bottom:1.5px solid var(--text);white-space:nowrap;}
   thead th.sortable{cursor:pointer;user-select:none;}
   thead th.sortable:hover{color:var(--navy);}
   thead th.sortable .arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:0.5;}
@@ -139,6 +173,8 @@
   tbody tr:hover{background:rgba(0,54,142,0.02);}
   tbody tr.row-reserved{background:#fdf4f3;}
   tbody tr.row-reserved:hover{background:#fbeae8;}
+  tbody tr.row-flash{animation:rowflash 900ms ease;}
+  @keyframes rowflash{0%{background:var(--success-bg);}100%{background:transparent;}}
   .id-cell{font-weight:500;font-size:12px;color:var(--muted);}
   .code-cell{font-size:12.5px;color:var(--text);cursor:pointer;border-radius:4px;padding:2px 4px;margin:-2px -4px;}
   .code-cell:hover{background:var(--grey-bg);}
@@ -146,14 +182,20 @@
   .notes-cell{color:var(--muted);font-size:12px;max-width:220px;white-space:normal;}
   .since-note{display:block;font-size:11px;color:var(--warn);margin-top:2px;font-weight:500;}
 
-  .status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;}
-  .status-pill .bullet{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
+  .status-pill{
+    display:inline-flex;align-items:center;justify-content:center;position:relative;
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:5px 11px;border-radius:var(--radius-full);border:1.5px solid currentColor;
+  }
+  .status-pill::before{content:'';position:absolute;inset:2px;border:1px solid currentColor;border-radius:var(--radius-full);opacity:.35;}
+  .status-pill .bullet{display:none;}
   .status-pill.Beschikbaar{background:var(--ok-bg);color:var(--ok);}
   .status-pill.Gereserveerd{background:var(--warn-bg);color:var(--warn);}
   .status-pill.Uitgeleverd{background:var(--grey-bg);color:var(--muted);}
 
   .row-actions{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;position:relative;}
-  .row-actions button{font-size:12px;padding:6px 11px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);white-space:nowrap;}
+  .row-actions button{font-size:12px;padding:6px 11px;border-radius:var(--radius-sm);border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);white-space:nowrap;transition:transform .08s ease,border-color .12s ease;}
+  .row-actions button:active{transform:scale(.96);}
   .row-actions button:hover{border-color:var(--navy);color:var(--navy);}
   .row-actions button:disabled{opacity:0.6;cursor:default;}
   .row-actions button.primary-action.reserve{border-color:var(--warn-bg);color:var(--warn);}
@@ -161,17 +203,19 @@
   .row-actions button.danger-action{border-color:var(--warn-bg);color:var(--warn);}
   .kebab-btn{padding:6px 9px !important;font-weight:700;}
   .kebab-menu{
-    display:none;position:fixed;top:0;left:0;background:#fff;border:1px solid var(--line);
-    border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:5;min-width:140px;overflow:hidden;
+    display:block;position:fixed;top:0;left:0;background:#fff;border:1px solid var(--line);
+    border-radius:var(--radius-md);box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:5;min-width:140px;overflow:hidden;
+    opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-4px) scale(.98);
+    transition:opacity .12s ease,transform .12s ease;
   }
-  .kebab-menu.open{display:block;}
+  .kebab-menu.open{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0) scale(1);}
   .kebab-menu button{width:100%;text-align:left;padding:9px 12px;border:none;background:none;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text);}
   .kebab-menu button:hover{background:var(--grey-bg);}
   .kebab-menu button.danger{color:var(--warn);}
 
   .empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
   .fetch-error{padding:40px;text-align:center;color:var(--warn);font-size:13px;}
-  .fetch-error button{margin-top:10px;background:var(--warn);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  .fetch-error button{margin-top:10px;background:var(--warn);color:#fff;border:none;border-radius:var(--radius-md);padding:8px 16px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;}
 
   /* ── Loading skeleton ───────────────────────────────────── */
   .skel-row td{padding:14px;}
@@ -179,33 +223,55 @@
   @keyframes skel{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
 
   /* ── Modal ──────────────────────────────────────────────── */
-  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(28,37,48,0.45);align-items:center;justify-content:center;z-index:20;padding:20px;}
-  .modal-backdrop.open{display:flex;}
-  .modal{background:#fff;border-radius:12px;padding:26px;width:100%;max-width:400px;border-top:4px solid var(--accent);}
+  .modal-backdrop{
+    display:flex;position:fixed;inset:0;background:rgba(28,37,48,0.45);align-items:center;justify-content:center;z-index:20;padding:20px;
+    opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s ease;
+  }
+  .modal-backdrop.open{opacity:1;visibility:visible;pointer-events:auto;}
+  .modal{background:#fff;border-radius:4px;padding:26px;width:100%;max-width:400px;border-top:4px solid var(--accent);
+    position:relative;overflow:hidden;
+    transform:scale(.96);transition:transform .16s cubic-bezier(.22,.9,.3,1.1);}
+  .modal::after{
+    content:'';position:absolute;top:4px;right:0;width:0;height:0;
+    border-style:solid;border-width:0 20px 20px 0;border-color:transparent var(--grey-bg) transparent transparent;
+    box-shadow:-1px 1px 2px rgba(16,24,40,.08);
+  }
+  .modal-backdrop.open .modal{transform:scale(1);}
   .modal h2{font-size:16px;margin:0 0 4px;font-weight:700;color:var(--navy);}
   .modal.danger-modal{border-top-color:var(--warn);}
   .modal-item-ref{
-    background:var(--grey-bg);border-radius:8px;padding:10px 12px;margin:12px 0 4px;font-size:12.5px;color:var(--text);
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;margin:12px 0 4px;font-size:12.5px;color:var(--text);
   }
   .modal-item-ref .mi-type{font-weight:700;display:block;}
   .modal-item-ref .mi-sn{color:var(--muted);}
   .modal label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin:12px 0 4px;font-weight:700;}
-  .modal input, .modal textarea, .modal select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13px;}
+  .modal input, .modal textarea, .modal select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:var(--radius-md);font-family:inherit;font-size:13px;}
   .modal textarea{resize:vertical;min-height:56px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
-  .btn-ghost{background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);}
-  .btn-danger{background:var(--warn);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
+  .btn-ghost{background:transparent;border:1px solid var(--line);border-radius:var(--radius-md);padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);}
+  .btn-danger{background:var(--warn);color:#fff;border:none;border-radius:var(--radius-md);padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
   .modal-hint{font-size:12px;color:var(--muted);margin-top:4px;}
   .modal-error{font-size:12.5px;color:var(--warn);margin-top:8px;font-weight:600;min-height:16px;}
+  .modal-error.shake{animation:shake .32s ease;}
+  @keyframes shake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
 
   /* ── Toasts ─────────────────────────────────────────────── */
   .toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:30;align-items:center;}
-  .toast{background:var(--text);color:#fff;padding:10px 18px;border-radius:8px;font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transform:translateY(8px);transition:opacity .18s,transform .18s;}
-  .toast.show{opacity:1;transform:translateY(0);}
+  .toast{background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--radius-md);font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transform:translateY(8px) scale(.97);transition:opacity .2s cubic-bezier(.22,.9,.3,1.1),transform .2s cubic-bezier(.22,.9,.3,1.1);}
+  .toast.show{opacity:1;transform:translateY(0) scale(1);}
   .toast.error-toast{background:var(--warn);}
 
   @media (max-width: 700px){
-    .table-scroll{border-radius:var(--radius);}
+    .panel{border-radius:var(--radius);}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 </style>
 </head>
@@ -215,7 +281,7 @@
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><span class="dot"></span> Swappool</div>
+    <div class="brand"><span class="dot"></span> Swappool <span class="version-badge" id="versionBadge"></span></div>
     <div class="admin-area">
       <div class="lang-switch" id="langSwitch"></div>
       <span class="admin-badge" id="adminBadge">Alleen bekijken en reserveren</span>
@@ -237,22 +303,25 @@
   </header>
 
   <div class="tabs">
+    <span class="tab-pill" id="tabPill"></span>
     <button class="active" id="tabPool" onclick="switchTab('pool')">Pool</button>
     <button id="tabArchive" onclick="switchTab('archive')">Archief</button>
   </div>
 
   <div class="type-filters" id="typeFilters"></div>
 
-  <div class="toolbar">
-    <input type="text" id="search" data-i18n-placeholder="search_placeholder" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="render()">
-    <button class="btn-primary" id="addBtn" onclick="openItemDialog('add')" style="display:none;" data-i18n="add_item_btn">+ Nieuw item</button>
-  </div>
+  <div class="panel">
+    <div class="toolbar">
+      <input type="text" id="search" data-i18n-placeholder="search_placeholder" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="onSearchInput()">
+      <button class="btn-primary" id="addBtn" onclick="openItemDialog('add')" style="display:none;" data-i18n="add_item_btn">+ Nieuw item</button>
+    </div>
 
-  <div class="table-scroll">
-    <table>
-      <thead id="theadRow"></thead>
-      <tbody id="rows"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table>
+        <thead id="theadRow"></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
   </div>
   <div class="empty" id="emptyMsg" style="display:none;"></div>
   <div class="fetch-error" id="errorMsg" style="display:none;"></div>
@@ -730,6 +799,13 @@
   let loginToken = 0;         // maakt een verouderde controle (na uitloggen/opnieuw inloggen) onschadelijk
   let adminPassword = '';
   let openKebabId = null;
+  let flashId = null;      // ID van de rij die zojuist lokaal is bijgewerkt (korte highlight)
+  let flashClearTimer = null;
+  function flashRow(id){
+    flashId = id;
+    if(flashClearTimer) clearTimeout(flashClearTimer);
+    flashClearTimer = setTimeout(() => { flashId = null; flashClearTimer = null; }, 900);
+  }
 
   // Automatisch verversen (zie pollOnce)
   const POLL_INTERVAL_MS = 20000; // hoe vaak de pagina op de achtergrond nieuwe gegevens ophaalt
@@ -744,9 +820,17 @@
   let writeChain = Promise.resolve();
   let needsResync = false;  // na een mislukte actie: lijst opnieuw ophalen zodra alles klaar is
   let tmpCounter = 0;
+  const APP_VERSION = '1.1.0'; // bij elke release ophogen (werkafspraak: versienummer zichtbaar in de pagina)
   const DEBUG = new URLSearchParams(location.search).has('debug');
   const timings = [];       // laatste metingen van serververzoeken (zichtbaar met ?debug)
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // Zoeken filtert de tabel pas na een korte pauze in het typen, i.p.v. bij elke toetsaanslag —
+  // scheelt onnodig herhaald tekenen van de tabel terwijl iemand nog aan het typen is.
+  let searchDebounceTimer = null;
+  function onSearchInput(){
+    if(searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(render, 150);
+  }
 
   let pendingReserveId = null;
   let pendingDeliverId = null;
@@ -1278,6 +1362,21 @@
     document.getElementById('tabArchive').textContent = `${t('tab_archive')} (${archiveScoped.length})`;
     document.getElementById('tabPool').classList.toggle('active', activeTab === 'pool');
     document.getElementById('tabArchive').classList.toggle('active', activeTab === 'archive');
+    positionTabPill();
+  }
+
+  // Schuift het witte "pilletje" onder de actieve Pool/Archief-knop i.p.v. een harde kleurwissel.
+  function positionTabPill(){
+    const btn = document.getElementById(activeTab === 'pool' ? 'tabPool' : 'tabArchive');
+    const pill = document.getElementById('tabPill');
+    const tabsEl = btn ? btn.closest('.tabs') : null;
+    if(!btn || !pill || !tabsEl) return;
+    // getBoundingClientRect i.p.v. offsetLeft: geeft de echte gerenderde positie, ongeacht
+    // padding/border-afrondingen, dus de pil komt exact onder de knop te staan.
+    const btnRect = btn.getBoundingClientRect();
+    const tabsRect = tabsEl.getBoundingClientRect();
+    pill.style.width = btnRect.width + 'px';
+    pill.style.transform = `translateX(${btnRect.left - tabsRect.left}px)`;
   }
 
   function renderThead(){
@@ -1402,7 +1501,7 @@
         }
         const sinceNote = (isReserved && s.GereserveerdOp) ? `<span class="since-note">${t('since_note', {date: fmtDate(s.GereserveerdOp)})}</span>` : '';
         return `
-        <tr class="${isReserved ? 'row-reserved' : ''}${s._pending ? ' row-pending' : ''}">
+        <tr class="${isReserved ? 'row-reserved' : ''}${s._pending ? ' row-pending' : ''}${s.ID === flashId ? ' row-flash' : ''}">
           <td class="id-cell" data-label="${t('th_id')}">${s._pending ? '…' : s.ID}</td>
           <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
           ${maatCell}
@@ -1465,6 +1564,7 @@
   document.addEventListener('click', closeKebab);
   window.addEventListener('scroll', closeKebab, true); // ook bij scrollen in de tabel zelf
   window.addEventListener('resize', closeKebab);
+  window.addEventListener('resize', positionTabPill);
 
   // ══════════════════════════════════════════════════════════
   // Modal-infrastructuur: Esc sluit, klik naast dialoog sluit,
@@ -1501,6 +1601,19 @@
     bd.addEventListener('click', (ev) => { if(ev.target === bd) closeModal(bd.id); });
   });
 
+  // Toont een foutmelding in een dialoog met een korte, subtiele "shake" — handig bij directe
+  // validatiefouten (leeg veld, dubbel serienummer, etc.) zodat het duidelijk opvalt zonder
+  // een dialoog of toast extra te hoeven openen. Leeg bericht wist alleen, zonder animatie.
+  function setModalError(elId, msg){
+    const el = document.getElementById(elId);
+    el.textContent = msg;
+    if(msg){
+      el.classList.remove('shake');
+      void el.offsetWidth; // forceer reflow zodat de animatie herstart bij een herhaalde fout
+      el.classList.add('shake');
+    }
+  }
+
   function setBusy(btnId, busy, busyLabel, idleLabel){
     const btn = document.getElementById(btnId);
     btn.disabled = busy;
@@ -1521,7 +1634,7 @@
   // door de server sowieso zelf met het wachtwoord gecontroleerd, dus dit geeft nooit toegang zonder wachtwoord.
   function submitLogin(){
     const pw = document.getElementById('loginPw').value;
-    if(!pw){ document.getElementById('loginErr').textContent = t('err_password_required'); return; }
+    if(!pw){ setModalError('loginErr', t('err_password_required')); return; }
     document.getElementById('loginErr').textContent = '';
     const token = ++loginToken;
     adminVerifying = true;
@@ -1538,7 +1651,7 @@
       logout();
       if(!topOpenModal()){
         document.getElementById('loginPw').value = '';
-        document.getElementById('loginErr').textContent = t('err_wrong_password');
+        setModalError('loginErr', t('err_wrong_password'));
         openModal('loginModal', 'loginPw');
       } else {
         toast(t('err_wrong_password'), true);
@@ -1594,7 +1707,7 @@
     const naam = document.getElementById('reserveName').value.trim();
     const reden = document.getElementById('reserveNote').value.trim();
     const errEl = document.getElementById('reserveErr');
-    if(!naam){ errEl.textContent = t('err_name_required'); return; }
+    if(!naam){ setModalError('reserveErr', t('err_name_required')); return; }
     errEl.textContent = '';
     const notitie = reden ? `${naam} — ${reden}` : naam;
     const cat = activeCat, id = pendingReserveId;
@@ -1602,6 +1715,7 @@
     closeModal('reserveModal');
     if(!item) return;
     item.Status = 'Gereserveerd'; item.Notitie = notitie; item.GereserveerdOp = new Date().toISOString();
+    flashRow(id);
     render();
     toast(t('toast_reserved', { type: item.Type, name: naam }));
     queueWrite(() => apiWrite(cat, { action: 'markReserved', id, notitie },
@@ -1613,6 +1727,7 @@
     const item = findLocal(id);
     if(!item) return;
     item.Status = 'Beschikbaar'; item.GereserveerdOp = '';
+    flashRow(id);
     render();
     toast(t('toast_released', { type: item.Type }));
     queueWrite(() => apiWrite(cat, { action: 'resetAvailable', id },
@@ -1698,8 +1813,8 @@
     const notitie = document.getElementById('itemNotes').value.trim();
     const errEl = document.getElementById('itemErr');
     errEl.textContent = '';
-    if(!type || !serienummer){ errEl.textContent = t('err_type_sn_required'); return; }
-    if(isDuplicateSerial(serienummer, editingId)){ errEl.textContent = t('err_duplicate_sn'); return; }
+    if(!type || !serienummer){ setModalError('itemErr', t('err_type_sn_required')); return; }
+    if(isDuplicateSerial(serienummer, editingId)){ setModalError('itemErr', t('err_duplicate_sn')); return; }
 
     const cat = activeCat, pw = adminPassword;
     if(editingId){
@@ -1708,6 +1823,7 @@
       closeModal('itemModal');
       if(!item) return;
       item.Type = type; item.Serienummer = serienummer; item.MEnummer = menummer; item.Bouwjaar = bouwjaar || null; item.Notitie = notitie;
+      flashRow(eid);
       render();
       toast(t('toast_updated', { type }));
       queueWrite(() => adminPost(cat, { action: 'update', id: eid, type, serienummer, menummer, bouwjaar, notitie },
@@ -1719,6 +1835,7 @@
                      Bouwjaar: bouwjaar || null, Status: 'Beschikbaar', Notitie: notitie };
       cache[cat].pool.push(item);
       closeModal('itemModal');
+      flashRow(item.ID);
       render();
       toast(t('toast_added', { type }));
       queueWrite(async () => {
@@ -1749,7 +1866,7 @@
     const ticket = document.getElementById('delTicket').value.trim();
     const klant = document.getElementById('delKlant').value.trim();
     const errEl = document.getElementById('deliverErr');
-    if(!ticket){ errEl.textContent = t('err_ticket_required'); return; }
+    if(!ticket){ setModalError('deliverErr', t('err_ticket_required')); return; }
     errEl.textContent = '';
     const cat = activeCat, id = pendingDeliverId, pw = adminPassword;
     const idx = cache[cat].pool.findIndex(s => s.ID === id);
@@ -1758,6 +1875,7 @@
     const [item] = cache[cat].pool.splice(idx, 1);
     item.UitgeleverdOp = new Date().toISOString(); item.Ticket = ticket; item.Klant = klant;
     cache[cat].archive.unshift(item);
+    flashRow(item.ID);
     render();
     toast(t('toast_delivered', { type: item.Type, ticket }));
     queueWrite(() => adminPost(cat, { action: 'deliver', id, ticket, klant },
@@ -1786,6 +1904,7 @@
     const [item] = cache[cat].archive.splice(idx, 1);
     item.Status = 'Beschikbaar'; item.UitgeleverdOp = ''; item.Ticket = ''; item.Klant = ''; item.GereserveerdOp = '';
     cache[cat].pool.push(item);
+    flashRow(item.ID);
     render();
     toast(t('toast_restored', { type: item.Type }));
     queueWrite(() => adminPost(cat, { action: 'restore', id },
@@ -1823,6 +1942,7 @@
   if(!(window.CSS && CSS.supports && CSS.supports('-webkit-text-security', 'disc'))){
     document.getElementById('loginPw').type = 'password';
   }
+  document.getElementById('versionBadge').textContent = 'v' + APP_VERSION;
   renderLangSwitch();
   applyStaticTranslations();
   render();
