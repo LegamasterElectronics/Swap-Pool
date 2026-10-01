@@ -46,7 +46,13 @@
     --radius-full: 999px;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--paper); color: var(--text); font-size: 13px; }
+  body {
+    margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--paper); color: var(--text); font-size: 13px;
+    background-image: radial-gradient(circle at 8% -8%, rgba(0,54,142,.05), transparent 32%),
+                       radial-gradient(circle at 96% 4%, rgba(243,147,37,.045), transparent 28%);
+    background-attachment: fixed;
+  }
   .mono { font-family: 'Roboto Mono', ui-monospace, Menlo, monospace; letter-spacing: .02em; }
   .wrap{max-width:1280px;margin:0 auto;padding:0 20px 90px;}
 
@@ -149,13 +155,18 @@
   .tabs .tab-pill{position:absolute;top:4px;bottom:4px;left:0;background:#fff;border-radius:var(--radius-sm);box-shadow:0 1px 2px rgba(0,0,0,.06);transition:transform .22s cubic-bezier(.22,.9,.3,1.1),width .22s cubic-bezier(.22,.9,.3,1.1);}
 
   /* ── Toolbar ────────────────────────────────────────────── */
-  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 14px -6px rgba(16,24,40,.08);}
   .panel .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0;padding:13px 18px;background:var(--grey-bg);border-bottom:1px solid var(--line);}
   .panel .table-scroll{border:none;border-radius:0;}
   .toolbar input[type=text]{padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-md);font-size:13px;font-family:inherit;min-width:260px;background:#fff;}
-  .btn-primary{background:var(--navy);color:#fff;border:none;border-radius:var(--radius-md);padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:transform .08s ease,background .12s ease;}
-  .btn-primary:active{transform:scale(.97);}
-  .btn-primary:hover{background:#00256b;}
+  .btn-primary{
+    background:linear-gradient(180deg,#0b4fc4,var(--navy));color:#fff;border:none;border-radius:var(--radius-md);
+    padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;
+    box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 5px rgba(0,54,142,.35),0 1px 1px rgba(0,0,0,.06);
+    transition:transform .08s ease,box-shadow .08s ease,background .12s ease;
+  }
+  .btn-primary:hover{background:linear-gradient(180deg,#0e5cde,#002a76);}
+  .btn-primary:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(0,54,142,.3);}
   .btn-primary:hover{background:var(--accent-dark);}
   .btn-primary:disabled{opacity:0.6;cursor:default;}
 
@@ -170,9 +181,14 @@
   thead th.sortable.active .arrow{opacity:1;}
   tbody td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;white-space:nowrap;}
   tbody tr:last-child td{border-bottom:none;}
-  tbody tr:hover{background:rgba(0,54,142,0.02);}
-  tbody tr.row-reserved{background:#fdf4f3;}
+  tbody tr:nth-child(even){background:#FAFBFD;}
+  tbody tr:hover{background:rgba(0,54,142,0.045);}
+  tbody tr{border-left:3px solid transparent;}
+  tbody tr:nth-child(even){background:#FAFBFD;}
+  tbody tr.row-available{border-left-color:var(--ok);}
+  tbody tr.row-reserved{border-left-color:var(--warn);background:#fdf4f3;}
   tbody tr.row-reserved:hover{background:#fbeae8;}
+  tbody tr.row-archived{border-left-color:var(--line);}
   tbody tr.row-flash{animation:rowflash 900ms ease;}
   @keyframes rowflash{0%{background:var(--success-bg);}100%{background:transparent;}}
   .id-cell{font-weight:500;font-size:12px;color:var(--muted);}
@@ -183,23 +199,43 @@
   .since-note{display:block;font-size:11px;color:var(--warn);margin-top:2px;font-weight:500;}
 
   .status-pill{
-    display:inline-flex;align-items:center;justify-content:center;position:relative;
-    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-    padding:5px 11px;border-radius:var(--radius-full);border:1.5px solid currentColor;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;
+    padding:5px 12px;border-radius:var(--radius-full);
+    box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 1px 3px rgba(16,24,40,.18);
   }
-  .status-pill::before{content:'';position:absolute;inset:2px;border:1px solid currentColor;border-radius:var(--radius-full);opacity:.35;}
   .status-pill .bullet{display:none;}
-  .status-pill.Beschikbaar{background:var(--ok-bg);color:var(--ok);}
-  .status-pill.Gereserveerd{background:var(--warn-bg);color:var(--warn);}
-  .status-pill.Uitgeleverd{background:var(--grey-bg);color:var(--muted);}
+  .status-pill.Beschikbaar{background:linear-gradient(180deg,#1C9650,var(--ok));}
+  .status-pill.Gereserveerd{background:linear-gradient(180deg,#D13B2E,var(--warn));}
+  .status-pill.Uitgeleverd{background:linear-gradient(180deg,#8291A3,var(--muted));}
 
   .row-actions{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;position:relative;}
-  .row-actions button{font-size:12px;padding:6px 11px;border-radius:var(--radius-sm);border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);white-space:nowrap;transition:transform .08s ease,border-color .12s ease;}
-  .row-actions button:active{transform:scale(.96);}
+  .row-actions button{
+    font-size:12px;padding:6px 11px;border-radius:var(--radius-sm);border:1px solid var(--line);
+    background:linear-gradient(180deg,#fff,#FAFBFD);box-shadow:0 1px 2px rgba(16,24,40,.06);
+    cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);white-space:nowrap;
+    transition:transform .08s ease,border-color .12s ease,box-shadow .08s ease;
+  }
+  .row-actions button:active{transform:translateY(1px);box-shadow:0 1px 1px rgba(16,24,40,.06);}
   .row-actions button:hover{border-color:var(--navy);color:var(--navy);}
   .row-actions button:disabled{opacity:0.6;cursor:default;}
-  .row-actions button.primary-action.reserve{border-color:var(--warn-bg);color:var(--warn);}
-  .row-actions button.primary-action.release{border-color:var(--ok-bg);color:var(--ok);}
+
+  /* De hoofdactie per rij (Reserveren / Vrijgeven) krijgt een gevulde, "opgetilde" knop —
+     dat is de belangrijkste actie in de rij, dus die mag opvallen. Secundaire knoppen
+     (Uitleveren, ⋯) blijven neutraal zodat de hiërarchie duidelijk blijft. */
+  .row-actions button.primary-action.reserve{
+    background:linear-gradient(180deg,#c6382b,var(--warn));border-color:#8f1d16;color:#fff;
+    box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 2px 6px rgba(179,38,30,.4);
+  }
+  .row-actions button.primary-action.reserve:hover{background:linear-gradient(180deg,#d44335,#9c2017);border-color:#6b140f;color:#fff;}
+  .row-actions button.primary-action.reserve:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(179,38,30,.3);}
+
+  .row-actions button.primary-action.release{
+    background:linear-gradient(180deg,#1b9c52,var(--ok));border-color:#0f5c2e;color:#fff;
+    box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 2px 6px rgba(21,128,61,.4);
+  }
+  .row-actions button.primary-action.release:hover{background:linear-gradient(180deg,#20b35e,#116639);border-color:#0b4323;color:#fff;}
+  .row-actions button.primary-action.release:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(21,128,61,.3);}
   .row-actions button.danger-action{border-color:var(--warn-bg);color:var(--warn);}
   .kebab-btn{padding:6px 9px !important;font-weight:700;}
   .kebab-menu{
@@ -249,7 +285,14 @@
   .modal textarea{resize:vertical;min-height:56px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
   .btn-ghost{background:transparent;border:1px solid var(--line);border-radius:var(--radius-md);padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);}
-  .btn-danger{background:var(--warn);color:#fff;border:none;border-radius:var(--radius-md);padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;}
+  .btn-danger{
+    background:linear-gradient(180deg,#c6382b,var(--warn));color:#fff;border:none;border-radius:var(--radius-md);
+    padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;
+    box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 5px rgba(179,38,30,.35);
+    transition:transform .08s ease,box-shadow .08s ease,background .12s ease;
+  }
+  .btn-danger:hover{background:linear-gradient(180deg,#d44335,#9c2017);}
+  .btn-danger:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(179,38,30,.3);}
   .modal-hint{font-size:12px;color:var(--muted);margin-top:4px;}
   .modal-error{font-size:12.5px;color:var(--warn);margin-top:8px;font-weight:600;min-height:16px;}
   .modal-error.shake{animation:shake .32s ease;}
@@ -820,7 +863,7 @@
   let writeChain = Promise.resolve();
   let needsResync = false;  // na een mislukte actie: lijst opnieuw ophalen zodra alles klaar is
   let tmpCounter = 0;
-  const APP_VERSION = '1.1.0'; // bij elke release ophogen (werkafspraak: versienummer zichtbaar in de pagina)
+  const APP_VERSION = '1.2.0'; // bij elke release ophogen (werkafspraak: versienummer zichtbaar in de pagina)
   const DEBUG = new URLSearchParams(location.search).has('debug');
   const timings = [];       // laatste metingen van serververzoeken (zichtbaar met ?debug)
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1501,7 +1544,7 @@
         }
         const sinceNote = (isReserved && s.GereserveerdOp) ? `<span class="since-note">${t('since_note', {date: fmtDate(s.GereserveerdOp)})}</span>` : '';
         return `
-        <tr class="${isReserved ? 'row-reserved' : ''}${s._pending ? ' row-pending' : ''}${s.ID === flashId ? ' row-flash' : ''}">
+        <tr class="${isReserved ? 'row-reserved' : 'row-available'}${s._pending ? ' row-pending' : ''}${s.ID === flashId ? ' row-flash' : ''}">
           <td class="id-cell" data-label="${t('th_id')}">${s._pending ? '…' : s.ID}</td>
           <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
           ${maatCell}
@@ -1514,7 +1557,7 @@
         </tr>`;
       } else {
         return `
-        <tr>
+        <tr class="row-archived">
           <td class="id-cell" data-label="${t('th_id')}">${s.ID}</td>
           <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
           ${maatCell}
