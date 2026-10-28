@@ -89,7 +89,11 @@
   .brand .logo{width:22px;height:22px;border-radius:6px;background:var(--navy);display:inline-block;}
   .brand .brand-sub{font-weight:500;color:var(--muted);}
   .version-badge{font-size:11px;font-weight:500;color:var(--muted);opacity:.8;}
-  .cattabs{display:flex;gap:22px;flex-grow:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
+  .cattabs-wrap{position:relative;display:flex;align-items:center;flex-grow:1;min-width:0;}
+  .cattabs{display:flex;gap:22px;flex-grow:1;min-width:0;overflow-x:auto;scrollbar-width:none;scroll-behavior:smooth;}
+  .tabs-arrow{display:none;flex:none;width:32px;height:32px;margin:0 4px;border-radius:50%;border:1px solid var(--line-strong);background:#fff;color:var(--navy);font:700 20px/1 'Inter',sans-serif;cursor:pointer;padding:0 0 3px;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(20,33,61,.12);}
+  .tabs-arrow:hover{border-color:var(--navy);}
+  .cattabs-wrap.can-left .tabs-arrow.left, .cattabs-wrap.can-right .tabs-arrow.right{display:flex;}
   .cattabs::-webkit-scrollbar{display:none;}
   .cattabs button{
     padding:0 2px;height:56px;display:flex;align-items:center;gap:8px;font:500 14px 'Inter',sans-serif;
@@ -183,16 +187,21 @@
   thead th.sortable.active .arrow{opacity:1;}
   tbody td{padding:13px 16px;border-bottom:1px solid var(--line-soft);font-size:14px;vertical-align:middle;white-space:nowrap;}
   tbody tr:hover td{background:var(--soft);}
-  tbody tr.sec-row td, tbody tr.sec-row:hover td{background:var(--soft);padding:12px 16px;border-bottom:1px solid var(--line-soft);border-top:1px solid var(--line-soft);}
-  tbody tr.sec-row:first-child td{border-top:none;}
+  tbody tr.sec-gap td, tbody tr.sec-gap:hover td{height:28px;padding:0;background:#fff;border:none;}
+  tbody tr.sec-row td, tbody tr.sec-row:hover td{background:var(--sec-bg,var(--soft));padding:16px 20px;border-bottom:1px solid var(--line-soft);border-left:6px solid var(--sec-color,var(--grey-dot));}
+  tr.sec-Beschikbaar{--sec-color:var(--ok);--sec-bg:#e8f5ec;}
+  tr.sec-Gereserveerd{--sec-color:var(--reserved);--sec-bg:#fff1d6;}
+  tr.sec-Uitgeleverd{--sec-color:var(--grey-dot);--sec-bg:#eef2f8;}
   tbody tr.row-reserved td{background:#fffbf3;}
   tbody tr.row-reserved:hover td{background:#fff6e5;}
   tbody tr.detail-row td, tbody tr.detail-row:hover td{background:#f8fafd;padding:20px 16px;white-space:normal;border-bottom:1px solid var(--line);}
   tbody tr.row-flash td{animation:rowflash 900ms ease;}
   @keyframes rowflash{0%{background:var(--ok-bg);}100%{background:transparent;}}
   .sec-head{display:flex;align-items:center;gap:10px;}
-  .sec-head .name{font-size:15px;font-weight:700;}
-  .sec-head .hint{font-size:13px;color:var(--muted);font-weight:400;}
+  .sec-head .name{font-size:18px;font-weight:700;letter-spacing:-.01em;}
+  .sec-head .dot{width:12px;height:12px;}
+  .sec-head .cnt{font-size:13px;background:rgba(255,255,255,.75);}
+  .sec-head .hint{font-size:14px;color:var(--text-2);font-weight:400;}
   .dot{width:10px;height:10px;border-radius:50%;background:var(--grey-dot);display:inline-block;flex:none;}
   .dot.Beschikbaar{background:var(--ok);}
   .dot.Gereserveerd{background:var(--reserved);}
@@ -234,8 +243,12 @@
 
   /* ── Mobiele kaarten (apart van de tabel) ───────────────── */
   .cards{display:none;flex-direction:column;gap:8px;}
-  .msec{display:flex;align-items:center;gap:8px;padding-top:8px;}
-  .msec b{font-size:15px;}
+  .msec{display:flex;align-items:center;gap:10px;padding:14px 16px;margin-top:22px;border-radius:var(--radius-md);border-left:6px solid var(--grey-dot);background:#eef2f8;}
+  .msec:first-child{margin-top:0;}
+  .msec.Beschikbaar{border-left-color:var(--ok);background:#e8f5ec;}
+  .msec.Gereserveerd{border-left-color:var(--reserved);background:#fff1d6;}
+  .msec b{font-size:17px;}
+  .msec .cnt{background:rgba(255,255,255,.75);}
   .mcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:10px;}
   .mcard.row-reserved{background:#fffbf3;}
   .mcard.row-flash{animation:rowflash 900ms ease;}
@@ -253,7 +266,8 @@
     .topbar-inner{flex-wrap:wrap;gap:0 16px;padding:0 16px;}
     .brand{height:52px;}
     .admin-area{margin-left:auto;height:52px;}
-    .cattabs{order:3;width:100%;flex-basis:100%;overflow-x:auto;gap:18px;border-top:1px solid var(--line-soft);scrollbar-width:none;}
+    .cattabs-wrap{order:3;width:100%;flex-basis:100%;border-top:1px solid var(--line-soft);}
+    .cattabs{gap:18px;}
     .cattabs::-webkit-scrollbar{display:none;}
     .cattabs button{height:46px;}
     .admin-badge{display:none;}
@@ -343,7 +357,11 @@
 <div class="topbar">
   <div class="topbar-inner">
     <div class="brand"><span class="logo"></span><span class="brand-co">Legamaster</span> <span class="brand-sub">Swap pool</span> <span class="version-badge" id="versionBadge"></span></div>
-    <nav class="cattabs" id="catTabs"></nav>
+    <div class="cattabs-wrap" id="catTabsWrap">
+      <button class="tabs-arrow left" id="catTabsLeft" onclick="scrollCatTabs(-1)" aria-label="Scroll links">‹</button>
+      <nav class="cattabs" id="catTabs"></nav>
+      <button class="tabs-arrow right" id="catTabsRight" onclick="scrollCatTabs(1)" aria-label="Scroll rechts">›</button>
+    </div>
     <div class="admin-area">
       <div class="lang-switch" id="langSwitch"></div>
       <span class="admin-badge" id="adminBadge">Alleen bekijken en reserveren</span>
@@ -971,7 +989,7 @@
   let writeChain = Promise.resolve();
   let needsResync = false;  // na een mislukte actie: lijst opnieuw ophalen zodra alles klaar is
   let tmpCounter = 0;
-  const APP_VERSION = '2.0.0'; // bij elke release ophogen (werkafspraak: versienummer zichtbaar in de pagina)
+  const APP_VERSION = '2.0.1'; // bij elke release ophogen (werkafspraak: versienummer zichtbaar in de pagina)
   const DEBUG = new URLSearchParams(location.search).has('debug');
   const timings = [];       // laatste metingen van serververzoeken (zichtbaar met ?debug)
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1465,7 +1483,24 @@
         : null;
       return `<button class="${activeCat === c.key ? 'active' : ''}" onclick="switchCategory('${c.key}')">${c.title}${n !== null ? `<span class="cnt">${n}</span>` : ''}</button>`;
     }).join('');
+    updateCatArrows();
+    const act = document.querySelector('#catTabs button.active');
+    if(act && !renderCatTabs.done){ renderCatTabs.done = true; act.scrollIntoView({block:'nearest', inline:'nearest'}); }
   }
+
+  // Pijltjes bij de categorie-tabs: alleen zichtbaar als er iets te scrollen valt.
+  function updateCatArrows(){
+    const nav = document.getElementById('catTabs'), wrap = document.getElementById('catTabsWrap');
+    if(!nav || !wrap) return;
+    wrap.classList.toggle('can-left', nav.scrollLeft > 4);
+    wrap.classList.toggle('can-right', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4);
+  }
+  function scrollCatTabs(dir){
+    const nav = document.getElementById('catTabs');
+    nav.scrollBy({ left: dir * Math.max(120, nav.clientWidth * 0.6), behavior: 'smooth' });
+  }
+  document.getElementById('catTabs').addEventListener('scroll', updateCatArrows);
+  window.addEventListener('resize', updateCatArrows);
 
   function updateHeader(){
     const meta = currentCatMeta();
@@ -1807,11 +1842,12 @@
     emptyEl.style.display = 'none';
 
     const sections = buildSections(filtered, isArchive);
-    rowsEl.innerHTML = sections.map(sec => `
-      <tr class="sec-row"><td colspan="${ncols}"><div class="sec-head"><span class="dot ${sec.status}"></span><span class="name">${escapeHtml(sec.name)}</span><span class="cnt">${sec.items.length}</span>${sec.hint ? `<span class="hint">${escapeHtml(sec.hint)}</span>` : ''}</div></td></tr>
+    rowsEl.innerHTML = sections.map((sec, i) => `
+      ${i > 0 ? `<tr class="sec-gap"><td colspan="${ncols}"></td></tr>` : ''}
+      <tr class="sec-row sec-${sec.status}"><td colspan="${ncols}"><div class="sec-head"><span class="dot ${sec.status}"></span><span class="name">${escapeHtml(sec.name)}</span><span class="cnt">${sec.items.length}</span>${sec.hint ? `<span class="hint">${escapeHtml(sec.hint)}</span>` : ''}</div></td></tr>
       ${sec.items.map(s => rowHtml(s, isArchive, meta, ncols)).join('')}`).join('');
     cardsEl.innerHTML = sections.map(sec => `
-      <div class="msec"><span class="dot ${sec.status}"></span><b>${escapeHtml(sec.name)}</b><span class="cnt">${sec.items.length}</span></div>
+      <div class="msec ${sec.status}"><span class="dot ${sec.status}"></span><b>${escapeHtml(sec.name)}</b><span class="cnt">${sec.items.length}</span></div>
       ${sec.items.map(s => cardHtml(s, isArchive, meta)).join('')}`).join('');
     detailReveal = null;
   }
