@@ -6,24 +6,24 @@
 <title>Swappool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #00368e; --accent: #f39325; --accent-dark: #d97e14; --cyan: #19b0e4;
-    --paper: #ffffff; --line: #d7e0ec; --radius: 8px;
-    --text: #101828; --muted: #5b6b82;
+    /* Demo Pool-stijl: navy + oranje accent, Inter, vaste-breedte letters voor nummers */
+    --navy: #00368e; --navy-dark: #002a70; --accent: #f39325; --accent-dark: #d97e14; --cyan: #19b0e4;
+    --paper: #ffffff; --page: #f5f7fa; --soft: #fafbfd;
+    --line: #e1e7f0; --line-soft: #e6ebf2; --line-strong: #cbd5e3;
+    --radius: 8px;
+    --text: #14213d; --text-2: #3b4a63; --muted: #5b6b82;
     --ok: #15803d; --ok-bg: #e8f5ec;
+    --reserved: #f39325;   /* stipje "Gereserveerd" — makkelijk terug te zetten naar rood: --reserved: #b3261e */
     --warn: #b3261e; --warn-bg: #fdecea;
-    --grey-bg: #f3f6fa;
+    --soon: #a15c00; --soon-bg: #fff1d6;
+    --grey-bg: #eef2f8; --grey-dot: #8291a3;
     --demo: #a15c00; --demo-bg: #fff4d9;
+    --chip-bg: #eef2f8;
 
-    /* ── shadcn-naamgeving, als alias bovenop bovenstaande — zelfde waarden, alleen de
-       namen volgen de shadcn/ui-conventie. Bestaande regels blijven de oude namen
-       gebruiken, dus dit voegt alleen een laag toe, er wordt niets herschreven.
-       Let op: shadcn's eigen "--accent" betekent iets anders (een subtiele hover-
-       achtergrond) dan ons bestaande --accent (de oranje actieknop-kleur). Om die
-       verwarring te voorkomen is ons oranje hier aan --primary gekoppeld, de
-       shadcn-term die daadwerkelijk voor een merk-/actiekleur bedoeld is. ──────── */
+    /* shadcn-naamgeving als alias bovenop de namen hierboven (alleen een naamlaag) */
     --background: var(--paper);
     --foreground: var(--text);
     --card: #ffffff;
@@ -40,21 +40,19 @@
     --destructive-foreground: #ffffff;
     --success: var(--ok);
     --success-bg: var(--ok-bg);
-    --radius-sm: 4px;
+    --radius-sm: 6px;
     --radius-md: var(--radius);
-    --radius-lg: 12px; /* nog los beschikbaar; de modal gebruikt voortaan 4px, zie .modal */
+    --radius-lg: 12px;
     --radius-full: 999px;
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    background: var(--paper); color: var(--text); font-size: 13px;
-    background-image: radial-gradient(circle at 8% -8%, rgba(0,54,142,.05), transparent 32%),
-                       radial-gradient(circle at 96% 4%, rgba(243,147,37,.045), transparent 28%);
-    background-attachment: fixed;
+    margin: 0; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--page); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased;
   }
-  .mono { font-family: 'Roboto Mono', ui-monospace, Menlo, monospace; letter-spacing: .02em; }
-  .wrap{max-width:1280px;margin:0 auto;padding:0 20px 90px;}
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size: 12.5px; font-weight: 500; letter-spacing: -.01em; }
+  .lbl { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .wrap{max-width:1320px;margin:0 auto;padding:28px 24px 90px;display:flex;flex-direction:column;gap:20px;}
 
   /* ── Demo-mode banner ───────────────────────────────────── */
   .demo-banner{
@@ -63,258 +61,270 @@
   }
   body.demo .demo-banner{display:block;}
 
-  /* Wachtwoordveld dat er als wachtwoord uitziet, maar voor de browser een gewoon tekstveld is:
-     zo vraagt de browser niet om het wachtwoord op te slaan. Zonder ondersteuning: zie init. */
+  /* Wachtwoordveld dat er als wachtwoord uitziet, maar voor de browser een gewoon tekstveld is */
   .secret-input{-webkit-text-security:disc;}
 
   .saving-chip{
     display:none;position:fixed;left:20px;bottom:20px;z-index:30;background:var(--navy);color:#fff;
-    padding:9px 16px;border-radius:var(--radius-full);font-size:12.5px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.2);
+    padding:9px 16px;border-radius:var(--radius-full);font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);
   }
   .saving-chip.show{display:block;}
   .debug-box{
-    position:fixed;right:12px;bottom:12px;z-index:40;background:rgba(28,37,48,.92);color:#fff;font-family:'Roboto Mono',monospace;
+    position:fixed;right:12px;bottom:12px;z-index:40;background:rgba(20,33,61,.92);color:#fff;font-family:'JetBrains Mono',monospace;
     font-size:11px;line-height:1.5;padding:8px 10px;border-radius:var(--radius-md);
   }
-  tbody tr.row-pending{opacity:.65;}
+  tbody tr.row-pending, .mcard.row-pending{opacity:.65;}
   .pending-note{color:var(--muted);font-size:12px;font-style:italic;}
 
   .sync-warning{
-    display:none;background:var(--warn-bg);color:var(--warn);text-align:center;font-size:12.5px;font-weight:700;
+    display:none;background:var(--warn-bg);color:var(--warn);text-align:center;font-size:12.5px;font-weight:600;
     padding:8px 16px;border-bottom:1px solid #f0c9c5;
   }
   .sync-warning.show{display:block;}
 
-  /* ── Top bar ────────────────────────────────────────────── */
-  .topbar{background:#fff;color:var(--text);border-bottom:2px solid var(--text);}
-  .topbar-inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
-  .brand{display:flex;align-items:center;gap:9px;font-weight:900;font-size:17px;}
-  .brand .dot{width:12px;height:12px;border-radius:2px;background:var(--navy);}
-  .version-badge{font-size:10.5px;font-weight:400;color:var(--muted);margin-left:4px;}
-  .admin-area{display:flex;align-items:center;gap:8px;}
-  .admin-area .lang-switch{display:flex;gap:2px;background:var(--grey-bg);border-radius:var(--radius-md);padding:2px;}
-  .admin-area .lang-switch button{
-    background:transparent;color:var(--muted);border:none;
-    padding:5px 9px;border-radius:var(--radius-sm);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;
-  }
-  .admin-area .lang-switch button.active{background:linear-gradient(180deg,#0b4fc4,var(--navy));color:#fff;box-shadow:0 1px 2px rgba(0,54,142,.3);}
-  .admin-area .lang-switch button:hover{color:var(--navy);}
-  .admin-badge{font-size:12px;font-weight:500;padding:4px 10px;border-radius:var(--radius-full);background:var(--grey-bg);color:var(--muted);box-shadow:inset 0 1px 2px rgba(16,24,40,.06);}
-  .admin-badge.on{background:var(--navy);color:#fff;font-weight:700;}
-  .admin-area button{
-    background:linear-gradient(180deg,#fff,#FAFBFD);color:var(--navy);border:1px solid var(--line);
-    padding:7px 14px;border-radius:var(--radius-md);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;
-    box-shadow:0 1px 2px rgba(16,24,40,.06);transition:transform .08s ease,box-shadow .12s ease,border-color .12s ease;
-  }
-  .admin-area button:active{transform:translateY(1px);box-shadow:0 1px 1px rgba(16,24,40,.06);}
-  .admin-area button:hover{border-color:var(--navy);}
-
-  /* ── Category tabs ──────────────────────────────────────── */
-  .cattabs{background:#fff;border-bottom:1px solid var(--line);}
-  .cattabs-inner{max-width:1280px;margin:0 auto;padding:0 20px;display:flex;gap:2px;flex-wrap:wrap;}
+  /* ── Kopbalk met tabs ───────────────────────────────────── */
+  .topbar{background:#fff;border-bottom:1px solid var(--line);}
+  .topbar-inner{max-width:1320px;margin:0 auto;padding:0 24px;min-height:56px;display:flex;align-items:center;gap:28px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--navy);letter-spacing:-.01em;white-space:nowrap;}
+  .brand .logo{width:22px;height:22px;border-radius:6px;background:var(--navy);display:inline-block;}
+  .brand .brand-sub{font-weight:500;color:var(--muted);}
+  .version-badge{font-size:11px;font-weight:500;color:var(--muted);opacity:.8;}
+  .cattabs{display:flex;gap:22px;flex-grow:1;min-width:0;overflow-x:auto;scrollbar-width:none;}
+  .cattabs::-webkit-scrollbar{display:none;}
   .cattabs button{
-    padding:14px 18px;border:none;background:transparent;font-size:13px;font-weight:700;
-    color:var(--muted);cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;
+    padding:0 2px;height:56px;display:flex;align-items:center;gap:8px;font:500 14px 'Inter',sans-serif;
+    color:var(--muted);border:none;border-bottom:2px solid transparent;background:transparent;cursor:pointer;white-space:nowrap;
   }
-  .cattabs button .n{font-weight:500;color:var(--muted);margin-left:3px;}
-  .cattabs button.active{color:var(--navy);border-bottom-color:var(--navy);background:linear-gradient(180deg,rgba(0,54,142,.05),transparent);}
   .cattabs button:hover{color:var(--navy);}
-
-  /* ── Header ─────────────────────────────────────────────── */
-  header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin:24px 0;border-bottom:1px solid var(--line);padding-bottom:16px;}
-  h1{font-size:22px;margin:0;font-weight:700;color:var(--navy);}
-  .counts{display:flex;gap:8px;flex-wrap:wrap;}
-  .count-tag{
-    display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:var(--radius-full);
-    border:1.5px solid transparent;cursor:pointer;font-family:inherit;background:none;
-    box-shadow:0 1px 2px rgba(16,24,40,.07);transition:transform .08s ease,box-shadow .12s ease;
+  .cattabs button.active{color:var(--navy);border-bottom-color:var(--navy);font-weight:600;}
+  .cnt{font-size:12px;font-weight:600;background:#e9eef6;color:var(--text-2);border-radius:999px;padding:1px 8px;line-height:1.5;}
+  .admin-area{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);flex:none;}
+  @media (max-width:1560px){.admin-badge:not(.on){display:none;}}
+  .lang-switch{display:flex;gap:2px;background:var(--grey-bg);border-radius:var(--radius-md);padding:2px;}
+  .lang-switch button{
+    background:transparent;color:var(--muted);border:none;padding:5px 9px;border-radius:var(--radius-sm);
+    font:600 11.5px 'Inter',sans-serif;cursor:pointer;
   }
-  .count-tag:hover{transform:translateY(-1px);box-shadow:0 2px 5px rgba(16,24,40,.12);}
-  .count-tag .bullet{width:7px;height:7px;border-radius:50%;background:currentColor;}
-  .count-tag.available{color:var(--ok);background:var(--ok-bg);}
-  .count-tag.reserved{color:var(--warn);background:var(--warn-bg);}
-  .count-tag.delivered{color:var(--muted);background:var(--grey-bg);}
-  .count-tag.active-filter{border-color:currentColor;}
-  .count-tag:hover{filter:brightness(0.96);}
-
-  /* ── Type-filters (bijv. ETX10 / ETX20 / Evolve Pro …) ─ */
-  .type-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
-  .type-filters:empty{margin-bottom:0;}
-  .type-chip{
-    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:var(--radius-full);
-    border:1.5px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-family:inherit;
-    box-shadow:0 1px 2px rgba(16,24,40,.05);transition:transform .08s ease,box-shadow .12s ease,border-color .12s ease,color .12s ease,background .12s ease;
+  .lang-switch button.active{background:#fff;color:var(--navy);box-shadow:0 1px 2px rgba(20,33,61,.12);}
+  .lang-switch button:hover{color:var(--navy);}
+  .admin-badge{font-size:12.5px;font-weight:500;padding:4px 10px;border-radius:var(--radius-full);background:var(--grey-bg);color:var(--muted);white-space:nowrap;}
+  .admin-badge.on{background:#e9eef6;color:var(--navy);font-weight:600;}
+  .admin-area > button{
+    font:600 13px 'Inter',sans-serif;border:1px solid var(--line-strong);background:#fff;color:var(--text);
+    border-radius:var(--radius-md);padding:7px 14px;cursor:pointer;white-space:nowrap;
   }
-  .type-chip:hover{border-color:var(--navy);color:var(--navy);transform:translateY(-1px);box-shadow:0 2px 5px rgba(16,24,40,.1);}
-  .type-chip .n{font-weight:500;opacity:0.75;}
-  .type-chip.active-filter{
-    border-color:#002a70;color:#fff;background:linear-gradient(180deg,#0b4fc4,var(--navy));
-    box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 2px 5px rgba(0,54,142,.3);
-  }
-  .type-chip.active-filter .n{opacity:0.85;}
-  .type-chip.zero{color:#a7aeb8;border-color:#e6e9ec;}
-  .type-chip.zero:hover{border-color:var(--navy);color:var(--navy);}
-  .type-chip.zero.active-filter{color:#fff;border-color:var(--navy);background:var(--navy);}
+  .admin-area > button:hover{border-color:var(--navy);color:var(--navy);}
 
-  /* ── Sub-tabs (Pool / Archief) ──────────────────────────── */
-  .tabs{position:relative;display:flex;gap:4px;margin-bottom:20px;background:var(--grey-bg);padding:4px;border-radius:var(--radius);width:fit-content;}
-  .tabs button{position:relative;z-index:1;font-size:13px;font-weight:700;padding:8px 18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:var(--radius-sm);font-family:inherit;transition:color .15s ease;}
+  /* ── Knoppen & velden (gedeeld) ─────────────────────────── */
+  .btn, .btn-ghost{
+    font:600 13px 'Inter',sans-serif;border:1px solid var(--line-strong);background:#fff;color:var(--text);
+    border-radius:var(--radius-md);padding:7px 14px;cursor:pointer;white-space:nowrap;line-height:1.3;
+    transition:background .12s ease,border-color .12s ease,color .12s ease;
+  }
+  .btn:hover, .btn-ghost:hover{border-color:var(--navy);color:var(--navy);}
+  .btn:disabled{opacity:.6;cursor:default;}
+  .btn.pri, .btn-primary{background:var(--navy);border:1px solid var(--navy);color:#fff;}
+  .btn.pri:hover, .btn-primary:hover{background:var(--navy-dark);border-color:var(--navy-dark);color:#fff;}
+  .btn-primary{font:600 13px 'Inter',sans-serif;border-radius:var(--radius-md);padding:8px 16px;cursor:pointer;white-space:nowrap;}
+  .btn-primary:disabled{opacity:.6;cursor:default;}
+  .btn.danger{color:var(--warn);border-color:#f0c7c3;}
+  .btn.danger:hover{background:var(--warn-bg);border-color:var(--warn);color:var(--warn);}
+  .btn.sm{padding:6px 12px;}
+  .field, .search{
+    font:400 14px 'Inter',sans-serif;border:1px solid var(--line-strong);border-radius:var(--radius-md);
+    padding:9px 11px;background:#fff;color:var(--text);
+  }
+  .field:focus, .search:focus, .modal input:focus, .modal select:focus, .modal textarea:focus{outline:2px solid rgba(0,54,142,.25);outline-offset:0;border-color:var(--navy);}
+
+  /* ── Paginakop ──────────────────────────────────────────── */
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .page-head h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text);}
+  .page-sub{margin-top:4px;font-size:14px;color:var(--muted);}
+  .page-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .search{width:360px;max-width:100%;}
+
+  /* ── Tellerkaarten ──────────────────────────────────────── */
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;}
+  .stat{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;text-align:left;
+    font-family:inherit;color:inherit;display:block;width:100%;
+  }
+  button.stat{cursor:pointer;transition:border-color .12s ease,box-shadow .12s ease;}
+  button.stat:hover{border-color:var(--line-strong);box-shadow:0 2px 10px rgba(20,33,61,.07);}
+  .stat.attn{border-top:3px solid var(--accent);}
+  .stat.active-filter{border-color:var(--navy);box-shadow:0 0 0 1px var(--navy) inset;}
+  .stat .num{font-size:30px;font-weight:700;margin-top:6px;line-height:1.1;letter-spacing:-.02em;}
+  .stat .sub{font-size:13px;color:var(--muted);margin-top:2px;}
+
+  /* ── Filterknoppen & Pool/Archief ───────────────────────── */
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .tabs{position:relative;display:flex;gap:4px;background:var(--grey-bg);padding:4px;border-radius:var(--radius-md);width:fit-content;}
+  .tabs button{position:relative;z-index:1;font:600 13px 'Inter',sans-serif;padding:7px 16px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:var(--radius-sm);transition:color .15s ease;}
   .tabs button.active{color:var(--navy);}
-  .tabs .tab-pill{position:absolute;top:4px;bottom:4px;left:0;background:#fff;border-radius:var(--radius-sm);box-shadow:0 1px 3px rgba(16,24,40,.12),0 1px 1px rgba(16,24,40,.08);transition:transform .22s cubic-bezier(.22,.9,.3,1.1),width .22s cubic-bezier(.22,.9,.3,1.1);}
+  .tabs .tab-pill{position:absolute;top:4px;bottom:4px;left:0;background:#fff;border-radius:var(--radius-sm);box-shadow:0 1px 3px rgba(20,33,61,.12);transition:transform .22s cubic-bezier(.22,.9,.3,1.1),width .22s cubic-bezier(.22,.9,.3,1.1);}
+  .type-filters{display:flex;gap:8px;flex-wrap:wrap;}
+  .type-filters:empty{display:none;}
+  .type-chip{font:600 13px 'Inter',sans-serif;padding:6px 12px;border-radius:var(--radius-md);border:1px solid var(--line-strong);background:#fff;color:var(--text);cursor:pointer;transition:background .12s ease,border-color .12s ease,color .12s ease;}
+  .type-chip:hover{border-color:var(--navy);color:var(--navy);}
+  .type-chip .n{font-weight:600;color:var(--muted);margin-left:2px;}
+  .type-chip.zero{color:#9aa7ba;border-color:var(--line);}
+  .type-chip.active-filter, .type-chip.zero.active-filter{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .type-chip.active-filter .n{color:#fff;opacity:.85;}
 
-  /* ── Toolbar ────────────────────────────────────────────── */
-  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04),0 4px 14px -6px rgba(16,24,40,.08);}
-  .panel .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0;padding:13px 18px;background:var(--grey-bg);border-bottom:1px solid var(--line);}
-  .panel .table-scroll{border:none;border-radius:0;}
-  .toolbar input[type=text]{padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-md);font-size:13px;font-family:inherit;min-width:260px;background:#fff;}
-  .btn-primary{
-    background:linear-gradient(180deg,#0b4fc4,var(--navy));color:#fff;border:none;border-radius:var(--radius-md);
-    padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;
-    box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 5px rgba(0,54,142,.35),0 1px 1px rgba(0,0,0,.06);
-    transition:transform .08s ease,box-shadow .08s ease,background .12s ease;
-  }
-  .btn-primary:hover{background:linear-gradient(180deg,#0e5cde,#002a76);}
-  .btn-primary:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(0,54,142,.3);}
-  .btn-primary:hover{background:var(--accent-dark);}
-  .btn-primary:disabled{opacity:0.6;cursor:default;}
-
-  /* ── Table ──────────────────────────────────────────────── */
-  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:#fff;}
-  table{width:100%;border-collapse:collapse;min-width:920px;}
-  thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);font-weight:700;padding:10px 18px;border-bottom:1.5px solid var(--text);white-space:nowrap;}
+  /* ── Sectie + tabel ─────────────────────────────────────── */
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;}
+  .table-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:960px;}
+  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:10px 16px;border-bottom:1px solid var(--line-soft);white-space:nowrap;background:#fff;}
   thead th.sortable{cursor:pointer;user-select:none;}
   thead th.sortable:hover{color:var(--navy);}
-  thead th.sortable .arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:0.5;}
+  thead th.sortable .arrow{display:inline-block;margin-left:3px;font-size:9px;opacity:.5;}
   thead th.sortable.active{color:var(--navy);}
   thead th.sortable.active .arrow{opacity:1;}
-  tbody td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;white-space:nowrap;}
-  tbody tr:last-child td{border-bottom:none;}
-  tbody tr:nth-child(even){background:#FAFBFD;}
-  tbody tr:hover{background:rgba(0,54,142,0.045);}
-  tbody tr{border-left:3px solid transparent;}
-  tbody tr:nth-child(even){background:#FAFBFD;}
-  tbody tr.row-available{border-left-color:var(--ok);}
-  tbody tr.row-reserved{border-left-color:var(--warn);background:#fdf4f3;}
-  tbody tr.row-reserved:hover{background:#fbeae8;}
-  tbody tr.row-archived{border-left-color:var(--line);}
-  tbody tr.row-flash{animation:rowflash 900ms ease;}
-  @keyframes rowflash{0%{background:var(--success-bg);}100%{background:transparent;}}
+  tbody td{padding:13px 16px;border-bottom:1px solid var(--line-soft);font-size:14px;vertical-align:middle;white-space:nowrap;}
+  tbody tr:hover td{background:var(--soft);}
+  tbody tr.sec-row td, tbody tr.sec-row:hover td{background:var(--soft);padding:12px 16px;border-bottom:1px solid var(--line-soft);border-top:1px solid var(--line-soft);}
+  tbody tr.sec-row:first-child td{border-top:none;}
+  tbody tr.row-reserved td{background:#fffbf3;}
+  tbody tr.row-reserved:hover td{background:#fff6e5;}
+  tbody tr.detail-row td, tbody tr.detail-row:hover td{background:#f8fafd;padding:20px 16px;white-space:normal;border-bottom:1px solid var(--line);}
+  tbody tr.row-flash td{animation:rowflash 900ms ease;}
+  @keyframes rowflash{0%{background:var(--ok-bg);}100%{background:transparent;}}
+  .sec-head{display:flex;align-items:center;gap:10px;}
+  .sec-head .name{font-size:15px;font-weight:700;}
+  .sec-head .hint{font-size:13px;color:var(--muted);font-weight:400;}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--grey-dot);display:inline-block;flex:none;}
+  .dot.Beschikbaar{background:var(--ok);}
+  .dot.Gereserveerd{background:var(--reserved);}
+  .dot.Uitgeleverd{background:var(--grey-dot);}
   .id-cell{font-weight:500;font-size:12px;color:var(--muted);}
-  .code-cell{font-size:12.5px;color:var(--text);cursor:pointer;border-radius:4px;padding:2px 4px;margin:-2px -4px;}
-  .code-cell:hover{background:var(--grey-bg);}
-  .model-cell{font-weight:700;white-space:normal;min-width:140px;}
-  .notes-cell{color:var(--muted);font-size:12px;max-width:220px;white-space:normal;}
-  .since-note{display:block;font-size:11px;color:var(--warn);margin-top:2px;font-weight:500;}
+  .code-cell{cursor:pointer;color:var(--text);}
+  .code-cell:hover{color:var(--navy);}
+  .model-cell{font-weight:600;white-space:normal;min-width:140px;}
+  .notes-cell{color:var(--muted);font-size:13px;max-width:240px;white-space:normal;}
 
-  .status-pill{
-    display:inline-flex;align-items:center;justify-content:center;
-    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;
-    padding:5px 12px;border-radius:var(--radius-full);
-    box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 1px 3px rgba(16,24,40,.18);
-  }
-  .status-pill .bullet{display:none;}
-  .status-pill.Beschikbaar{background:linear-gradient(180deg,#1C9650,var(--ok));}
-  .status-pill.Gereserveerd{background:linear-gradient(180deg,#D13B2E,var(--warn));}
-  .status-pill.Uitgeleverd{background:linear-gradient(180deg,#8291A3,var(--muted));}
+  .status{display:inline-flex;align-items:center;gap:8px;font-weight:500;font-size:13.5px;}
+  .status .dot{width:8px;height:8px;}
+  .status-cell{display:flex;flex-direction:column;gap:4px;align-items:flex-start;}
+  .day-label{white-space:nowrap;font-size:12px;font-weight:600;border-radius:6px;padding:1px 7px;color:var(--muted);background:transparent;padding-left:0;}
+  .day-label.soon{color:var(--soon);background:var(--soon-bg);padding-left:7px;}
+  .day-label.late{color:var(--warn);background:var(--warn-bg);padding-left:7px;}
 
-  .row-actions{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;position:relative;}
-  .row-actions button{
-    font-size:12px;padding:6px 11px;border-radius:var(--radius-sm);border:1px solid var(--line);
-    background:linear-gradient(180deg,#fff,#FAFBFD);box-shadow:0 1px 2px rgba(16,24,40,.06);
-    cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);white-space:nowrap;
-    transition:transform .08s ease,border-color .12s ease,box-shadow .08s ease;
-  }
-  .row-actions button:active{transform:translateY(1px);box-shadow:0 1px 1px rgba(16,24,40,.06);}
-  .row-actions button:hover{border-color:var(--navy);color:var(--navy);}
-  .row-actions button:disabled{opacity:0.6;cursor:default;}
+  .row-actions{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;justify-content:flex-end;}
+  .empty{padding:44px;text-align:center;color:var(--muted);font-size:14px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);}
+  .fetch-error{padding:40px;text-align:center;color:var(--warn);font-size:14px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);}
+  .fetch-error button{margin-top:10px;background:var(--warn);color:#fff;border:none;border-radius:var(--radius-md);padding:8px 16px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;}
 
-  /* De hoofdactie per rij (Reserveren / Vrijgeven) krijgt een gevulde, "opgetilde" knop —
-     dat is de belangrijkste actie in de rij, dus die mag opvallen. Secundaire knoppen
-     (Uitleveren, ⋯) blijven neutraal zodat de hiërarchie duidelijk blijft. */
-  .row-actions button.primary-action.reserve{
-    background:linear-gradient(180deg,#c6382b,var(--warn));border-color:#8f1d16;color:#fff;
-    box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 2px 6px rgba(179,38,30,.4);
-  }
-  .row-actions button.primary-action.reserve:hover{background:linear-gradient(180deg,#d44335,#9c2017);border-color:#6b140f;color:#fff;}
-  .row-actions button.primary-action.reserve:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(179,38,30,.3);}
+  /* ── Detail: informatie links, Beheer-paneel rechts ─────── */
+  .detail{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:24px;align-items:start;}
+  .detail.reveal{animation:panelIn .2s cubic-bezier(.22,.9,.3,1.1);}
+  @keyframes panelIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  .detail-main{display:flex;flex-direction:column;gap:16px;min-width:0;}
+  .dcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 24px;}
+  .dcard h3{grid-column:1/-1;margin:0;font-size:15px;font-weight:700;}
+  .dd{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .dd b{font-weight:500;font-size:14px;overflow-wrap:anywhere;}
+  .dd b.mono{font-size:13px;}
+  .dd .muted{color:var(--muted);}
+  .manage{background:#fff;border:1px solid #c9d6ee;border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 24px rgba(0,54,142,.08);}
+  .manage h3{margin:0;font-size:15px;font-weight:700;color:var(--navy);}
+  .manage .btn{width:100%;padding:10px 14px;}
+  .manage .manage-hint{font-size:13px;color:var(--muted);margin:0;}
+  .manage hr{border:none;border-top:1px solid var(--line-soft);margin:2px 0;width:100%;}
 
-  .row-actions button.primary-action.release{
-    background:linear-gradient(180deg,#1b9c52,var(--ok));border-color:#0f5c2e;color:#fff;
-    box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 2px 6px rgba(21,128,61,.4);
-  }
-  .row-actions button.primary-action.release:hover{background:linear-gradient(180deg,#20b35e,#116639);border-color:#0b4323;color:#fff;}
-  .row-actions button.primary-action.release:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(21,128,61,.3);}
-  .row-actions button.danger-action{border-color:var(--warn-bg);color:var(--warn);}
-  .kebab-btn{padding:6px 9px !important;font-weight:700;}
-  .kebab-menu{
-    display:block;position:fixed;top:0;left:0;background:#fff;border:1px solid var(--line);
-    border-radius:var(--radius-md);box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:5;min-width:140px;overflow:hidden;
-    opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-4px) scale(.98);
-    transition:opacity .12s ease,transform .12s ease;
-  }
-  .kebab-menu.open{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0) scale(1);}
-  .kebab-menu button{width:100%;text-align:left;padding:9px 12px;border:none;background:none;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text);}
-  .kebab-menu button:hover{background:var(--grey-bg);}
-  .kebab-menu button.danger{color:var(--warn);}
+  /* ── Mobiele kaarten (apart van de tabel) ───────────────── */
+  .cards{display:none;flex-direction:column;gap:8px;}
+  .msec{display:flex;align-items:center;gap:8px;padding-top:8px;}
+  .msec b{font-size:15px;}
+  .mcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px;display:flex;flex-direction:column;gap:10px;}
+  .mcard.row-reserved{background:#fffbf3;}
+  .mcard.row-flash{animation:rowflash 900ms ease;}
+  .mcard-top{display:flex;align-items:center;gap:12px;}
+  .mcard-main{flex-grow:1;display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .mcard-main b{font-size:15px;font-weight:600;}
+  .mcard-main .mono{color:var(--text-2);overflow-wrap:anywhere;}
+  .mcard-main .sub{font-size:13px;color:var(--muted);}
+  .mcard-note{font-size:13px;color:var(--muted);}
+  .mcard-acts{display:flex;gap:8px;flex-wrap:wrap;}
+  .mcard .detail{grid-template-columns:1fr;gap:14px;padding-top:4px;}
+  .mcard .dcard{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;gap:14px 16px;}
 
-  .empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
-  .fetch-error{padding:40px;text-align:center;color:var(--warn);font-size:13px;}
-  .fetch-error button{margin-top:10px;background:var(--warn);color:#fff;border:none;border-radius:var(--radius-md);padding:8px 16px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;}
+  @media (max-width: 900px){
+    .topbar-inner{flex-wrap:wrap;gap:0 16px;padding:0 16px;}
+    .brand{height:52px;}
+    .admin-area{margin-left:auto;height:52px;}
+    .cattabs{order:3;width:100%;flex-basis:100%;overflow-x:auto;gap:18px;border-top:1px solid var(--line-soft);scrollbar-width:none;}
+    .cattabs::-webkit-scrollbar{display:none;}
+    .cattabs button{height:46px;}
+    .admin-badge{display:none;}
+    .brand .brand-co{display:none;}
+    .brand .brand-sub{color:var(--navy);font-weight:700;}
+    .version-badge{display:none;}
+    .stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .detail{grid-template-columns:1fr;}
+  }
+  @media (max-width: 760px){
+    .wrap{padding:16px 16px 90px;gap:16px;}
+    .page-head h1{font-size:22px;}
+    .page-tools{width:100%;}
+    .search{width:100%;min-height:44px;font-size:15px;}
+    .page-tools .btn-primary{flex-grow:1;min-height:44px;}
+    .panel{display:none;}
+    .cards{display:flex;}
+    .stat{padding:12px 14px;}
+    .stat .num{font-size:24px;}
+    .btn, .btn-ghost{min-height:44px;font-size:14px;}
+    .btn.sm{min-height:44px;padding:0 14px;}
+    .type-chip{min-height:40px;}
+    .tabs button{min-height:40px;}
+    .lang-switch button{padding:8px 8px;}
+    .admin-area > button{min-height:36px;}
+    .dcard{grid-template-columns:repeat(2,minmax(0,1fr));}
+  }
 
   /* ── Loading skeleton ───────────────────────────────────── */
-  .skel-row td{padding:14px;}
+  .panel.hide{display:none !important;}
+  .skel-row td{padding:14px 16px;}
   .skel-bar{height:12px;border-radius:4px;background:linear-gradient(90deg,#eceff2 25%,#f5f6f8 37%,#eceff2 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;}
+  .skel-card{height:78px;border-radius:12px;background:linear-gradient(90deg,#eceff2 25%,#f5f6f8 37%,#eceff2 63%);background-size:400% 100%;animation:skel 1.4s ease infinite;}
   @keyframes skel{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
 
   /* ── Modal ──────────────────────────────────────────────── */
   .modal-backdrop{
-    display:flex;position:fixed;inset:0;background:rgba(28,37,48,0.45);align-items:center;justify-content:center;z-index:20;padding:20px;
+    display:flex;position:fixed;inset:0;background:rgba(20,33,61,0.45);align-items:center;justify-content:center;z-index:20;padding:20px;
     opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s ease;
   }
   .modal-backdrop.open{opacity:1;visibility:visible;pointer-events:auto;}
-  .modal{background:#fff;border-radius:4px;padding:26px;width:100%;max-width:400px;border-top:4px solid var(--accent);
-    position:relative;overflow:hidden;
+  .modal{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:420px;
+    box-shadow:0 20px 50px rgba(20,33,61,.25);max-height:calc(100vh - 40px);overflow-y:auto;
     transform:scale(.96);transition:transform .16s cubic-bezier(.22,.9,.3,1.1);}
-  .modal::after{
-    content:'';position:absolute;top:4px;right:0;width:0;height:0;
-    border-style:solid;border-width:0 20px 20px 0;border-color:transparent var(--grey-bg) transparent transparent;
-    box-shadow:-1px 1px 2px rgba(16,24,40,.08);
-  }
   .modal-backdrop.open .modal{transform:scale(1);}
-  .modal h2{font-size:16px;margin:0 0 4px;font-weight:700;color:var(--navy);}
-  .modal.danger-modal{border-top-color:var(--warn);}
+  .modal h2{font-size:18px;margin:0 0 4px;font-weight:700;color:var(--text);letter-spacing:-.01em;}
+  .modal.danger-modal h2{color:var(--warn);}
   .modal-item-ref{
-    background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;margin:12px 0 4px;font-size:12.5px;color:var(--text);
+    background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-md);padding:10px 12px;margin:12px 0 4px;font-size:13px;color:var(--text);
   }
-  .modal-item-ref .mi-type{font-weight:700;display:block;}
-  .modal-item-ref .mi-sn{color:var(--muted);}
-  .modal label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);margin:12px 0 4px;font-weight:700;}
-  .modal input, .modal textarea, .modal select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:var(--radius-md);font-family:inherit;font-size:13px;}
-  .modal textarea{resize:vertical;min-height:56px;}
+  .modal-item-ref .mi-type{font-weight:600;display:block;}
+  .modal-item-ref .mi-sn{color:var(--muted);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;}
+  .modal label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 5px;font-weight:600;}
+  .modal input, .modal textarea, .modal select{width:100%;padding:9px 11px;border:1px solid var(--line-strong);border-radius:var(--radius-md);font-family:inherit;font-size:14px;background:#fff;color:var(--text);}
+  .modal textarea{resize:vertical;min-height:64px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
-  .btn-ghost{background:transparent;border:1px solid var(--line);border-radius:var(--radius-md);padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:700;color:var(--text);}
   .btn-danger{
-    background:linear-gradient(180deg,#c6382b,var(--warn));color:#fff;border:none;border-radius:var(--radius-md);
-    padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;
-    box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 5px rgba(179,38,30,.35);
-    transition:transform .08s ease,box-shadow .08s ease,background .12s ease;
+    background:var(--warn);color:#fff;border:1px solid var(--warn);border-radius:var(--radius-md);
+    padding:8px 16px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;transition:background .12s ease;
   }
-  .btn-danger:hover{background:linear-gradient(180deg,#d44335,#9c2017);}
-  .btn-danger:active{transform:translateY(1px);box-shadow:0 1px 2px rgba(179,38,30,.3);}
-  .modal-hint{font-size:12px;color:var(--muted);margin-top:4px;}
-  .modal-error{font-size:12.5px;color:var(--warn);margin-top:8px;font-weight:600;min-height:16px;}
+  .btn-danger:hover{background:#8f1d16;border-color:#8f1d16;}
+  .modal-hint{font-size:12.5px;color:var(--muted);margin-top:6px;}
+  .modal-error{font-size:13px;color:var(--warn);margin-top:8px;font-weight:600;min-height:16px;}
   .modal-error.shake{animation:shake .32s ease;}
   @keyframes shake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
 
   /* ── Toasts ─────────────────────────────────────────────── */
   .toast-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:30;align-items:center;}
-  .toast{background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--radius-md);font-size:12.5px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transform:translateY(8px) scale(.97);transition:opacity .2s cubic-bezier(.22,.9,.3,1.1),transform .2s cubic-bezier(.22,.9,.3,1.1);}
+  .toast{background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--radius-md);font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:0;transform:translateY(8px) scale(.97);transition:opacity .2s cubic-bezier(.22,.9,.3,1.1),transform .2s cubic-bezier(.22,.9,.3,1.1);}
   .toast.show{opacity:1;transform:translateY(0) scale(1);}
   .toast.error-toast{background:var(--warn);}
-
-  @media (max-width: 700px){
-    .panel{border-radius:var(--radius);}
-  }
 
   @media (prefers-reduced-motion: reduce){
     *, *::before, *::after{
@@ -332,7 +342,8 @@
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><span class="dot"></span> Swappool <span class="version-badge" id="versionBadge"></span></div>
+    <div class="brand"><span class="logo"></span><span class="brand-co">Legamaster</span> <span class="brand-sub">Swap pool</span> <span class="version-badge" id="versionBadge"></span></div>
+    <nav class="cattabs" id="catTabs"></nav>
     <div class="admin-area">
       <div class="lang-switch" id="langSwitch"></div>
       <span class="admin-badge" id="adminBadge">Alleen bekijken en reserveren</span>
@@ -341,32 +352,32 @@
   </div>
 </div>
 
-<nav class="cattabs">
-  <div class="cattabs-inner" id="catTabs"></div>
-</nav>
-
 <div class="sync-warning" id="syncWarning" data-i18n="sync_offline">Geen verbinding met de server — de getoonde gegevens zijn mogelijk verouderd.</div>
 
 <div class="wrap" id="app">
-  <header>
-    <h1 id="pageTitle">—</h1>
-    <div class="counts" id="counts"></div>
-  </header>
-
-  <div class="tabs">
-    <span class="tab-pill" id="tabPill"></span>
-    <button class="active" id="tabPool" onclick="switchTab('pool')">Pool</button>
-    <button id="tabArchive" onclick="switchTab('archive')">Archief</button>
-  </div>
-
-  <div class="type-filters" id="typeFilters"></div>
-
-  <div class="panel">
-    <div class="toolbar">
-      <input type="text" id="search" data-i18n-placeholder="search_placeholder" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="onSearchInput()">
+  <div class="page-head">
+    <div>
+      <h1 id="pageTitle">—</h1>
+      <div class="page-sub" id="pageSub"></div>
+    </div>
+    <div class="page-tools">
+      <input type="text" class="search" id="search" data-i18n-placeholder="search_placeholder" placeholder="Zoek op type, serienummer, ME-nummer, notitie, ticket of klant…" oninput="onSearchInput()">
       <button class="btn-primary" id="addBtn" onclick="openItemDialog('add')" style="display:none;" data-i18n="add_item_btn">+ Nieuw item</button>
     </div>
+  </div>
 
+  <div class="stats" id="counts"></div>
+
+  <div class="filter-row">
+    <div class="tabs">
+      <span class="tab-pill" id="tabPill"></span>
+      <button class="active" id="tabPool" onclick="switchTab('pool')">Pool</button>
+      <button id="tabArchive" onclick="switchTab('archive')">Archief</button>
+    </div>
+    <div class="type-filters" id="typeFilters"></div>
+  </div>
+
+  <div class="panel">
     <div class="table-scroll">
       <table>
         <thead id="theadRow"></thead>
@@ -374,6 +385,7 @@
       </table>
     </div>
   </div>
+  <div class="cards" id="cards"></div>
   <div class="empty" id="emptyMsg" style="display:none;"></div>
   <div class="fetch-error" id="errorMsg" style="display:none;"></div>
 </div>
@@ -530,6 +542,28 @@
       status_Beschikbaar: 'Beschikbaar', status_Gereserveerd: 'Gereserveerd', status_Uitgeleverd: 'Uitgeleverd',
       count_beschikbaar: '{n} beschikbaar', count_gereserveerd: '{n} gereserveerd', count_uitgeleverd: '{n} uitgeleverd',
       since_note: 'sinds {date}',
+      filter_all: 'Alle',
+      stat_avail_sub: 'direct inzetbaar',
+      stat_reserved_longest: 'langst: {n}',
+      stat_reserved_none: 'niets gereserveerd',
+      stat_delivered_sub: 'in het archief',
+      stat_total: 'In pool',
+      stat_total_sub: 'beschikbaar + gereserveerd',
+      day_today: 'vandaag',
+      day_one: '1 dag',
+      day_many: '{n} dagen',
+      sub_pool: 'Beschikbare items staan bovenaan, gereserveerde eronder.',
+      sub_archive: 'Uitgeleverde items, met ticket en klant.',
+      sec_hint_reserved: 'bezet — vrijgeven of uitleveren',
+      btn_details: 'Details',
+      btn_close: 'Sluiten',
+      detail_item: 'Item',
+      detail_status: 'Status en historie',
+      detail_added: 'Toegevoegd',
+      detail_updated: 'Bijgewerkt',
+      detail_reserved_since: 'Gereserveerd sinds',
+      detail_manage: 'Beheer',
+      manage_login_hint: 'Log in als beheerder om te bewerken, uit te leveren of te verwijderen.',
       btn_reserveren: 'Reserveren', btn_vrijgeven: 'Vrijgeven', btn_uitleveren: 'Uitleveren',
       btn_bewerken: 'Bewerken', btn_verwijderen: 'Verwijderen', btn_annuleren: 'Annuleren',
       btn_opslaan: 'Opslaan', btn_bevestigen: 'Bevestigen', btn_inloggen: 'Inloggen',
@@ -594,6 +628,28 @@
       status_Beschikbaar: 'Verfügbar', status_Gereserveerd: 'Reserviert', status_Uitgeleverd: 'Ausgeliefert',
       count_beschikbaar: '{n} verfügbar', count_gereserveerd: '{n} reserviert', count_uitgeleverd: '{n} ausgeliefert',
       since_note: 'seit {date}',
+      filter_all: 'Alle',
+      stat_avail_sub: 'sofort einsetzbar',
+      stat_reserved_longest: 'am längsten: {n}',
+      stat_reserved_none: 'nichts reserviert',
+      stat_delivered_sub: 'im Archiv',
+      stat_total: 'Im Pool',
+      stat_total_sub: 'verfügbar + reserviert',
+      day_today: 'heute',
+      day_one: '1 Tag',
+      day_many: '{n} Tage',
+      sub_pool: 'Verfügbare Artikel stehen oben, reservierte darunter.',
+      sub_archive: 'Ausgelieferte Artikel, mit Ticket und Kunde.',
+      sec_hint_reserved: 'belegt — freigeben oder ausliefern',
+      btn_details: 'Details',
+      btn_close: 'Schließen',
+      detail_item: 'Artikel',
+      detail_status: 'Status und Verlauf',
+      detail_added: 'Hinzugefügt',
+      detail_updated: 'Aktualisiert',
+      detail_reserved_since: 'Reserviert seit',
+      detail_manage: 'Verwaltung',
+      manage_login_hint: 'Als Verwalter anmelden, um zu bearbeiten, auszuliefern oder zu löschen.',
       btn_reserveren: 'Reservieren', btn_vrijgeven: 'Freigeben', btn_uitleveren: 'Ausliefern',
       btn_bewerken: 'Bearbeiten', btn_verwijderen: 'Löschen', btn_annuleren: 'Abbrechen',
       btn_opslaan: 'Speichern', btn_bevestigen: 'Bestätigen', btn_inloggen: 'Anmelden',
@@ -658,6 +714,28 @@
       status_Beschikbaar: 'Available', status_Gereserveerd: 'Reserved', status_Uitgeleverd: 'Delivered',
       count_beschikbaar: '{n} available', count_gereserveerd: '{n} reserved', count_uitgeleverd: '{n} delivered',
       since_note: 'since {date}',
+      filter_all: 'All',
+      stat_avail_sub: 'ready to use',
+      stat_reserved_longest: 'longest: {n}',
+      stat_reserved_none: 'nothing reserved',
+      stat_delivered_sub: 'in the archive',
+      stat_total: 'In pool',
+      stat_total_sub: 'available + reserved',
+      day_today: 'today',
+      day_one: '1 day',
+      day_many: '{n} days',
+      sub_pool: 'Available items first, reserved ones below.',
+      sub_archive: 'Delivered items, with ticket and customer.',
+      sec_hint_reserved: 'taken — release or deliver',
+      btn_details: 'Details',
+      btn_close: 'Close',
+      detail_item: 'Item',
+      detail_status: 'Status and history',
+      detail_added: 'Added',
+      detail_updated: 'Updated',
+      detail_reserved_since: 'Reserved since',
+      detail_manage: 'Manage',
+      manage_login_hint: 'Log in as administrator to edit, deliver or delete.',
       btn_reserveren: 'Reserve', btn_vrijgeven: 'Release', btn_uitleveren: 'Deliver',
       btn_bewerken: 'Edit', btn_verwijderen: 'Delete', btn_annuleren: 'Cancel',
       btn_opslaan: 'Save', btn_bevestigen: 'Confirm', btn_inloggen: 'Log in',
@@ -722,6 +800,28 @@
       status_Beschikbaar: 'Beskikber', status_Gereserveerd: 'Reservearre', status_Uitgeleverd: 'Levere',
       count_beschikbaar: '{n} beskikber', count_gereserveerd: '{n} reservearre', count_uitgeleverd: '{n} levere',
       since_note: 'sûnt {date}',
+      filter_all: 'Alle',
+      stat_avail_sub: 'direkt brûkber',
+      stat_reserved_longest: 'langst: {n}',
+      stat_reserved_none: 'neat reservearre',
+      stat_delivered_sub: 'yn it argyf',
+      stat_total: 'Yn de pool',
+      stat_total_sub: 'beskikber + reservearre',
+      day_today: 'hjoed',
+      day_one: '1 dei',
+      day_many: '{n} dagen',
+      sub_pool: 'Beskikbere items steane boppe, reservearre dêrûnder.',
+      sub_archive: 'Levere items, mei ticket en klant.',
+      sec_hint_reserved: 'beset — frijjaan of leverje',
+      btn_details: 'Details',
+      btn_close: 'Slute',
+      detail_item: 'Item',
+      detail_status: 'Status en skiednis',
+      detail_added: 'Tafoege',
+      detail_updated: 'Bywurke',
+      detail_reserved_since: 'Reservearre sûnt',
+      detail_manage: 'Behear',
+      manage_login_hint: 'Meld jo oan as behearder om te bewurkjen, te leverjen of te wiskjen.',
       btn_reserveren: 'Reservearje', btn_vrijgeven: 'Frijjaan', btn_uitleveren: 'Leverje',
       btn_bewerken: 'Bewurkje', btn_verwijderen: 'Wiskje', btn_annuleren: 'Annulearje',
       btn_opslaan: 'Bewarje', btn_bevestigen: 'Befêstigje', btn_inloggen: 'Ynlogge',
@@ -871,7 +971,7 @@
   let writeChain = Promise.resolve();
   let needsResync = false;  // na een mislukte actie: lijst opnieuw ophalen zodra alles klaar is
   let tmpCounter = 0;
-  const APP_VERSION = '1.3.0'; // bij elke release ophogen (werkafspraak: versienummer zichtbaar in de pagina)
+  const APP_VERSION = '2.0.0'; // bij elke release ophogen (werkafspraak: versienummer zichtbaar in de pagina)
   const DEBUG = new URLSearchParams(location.search).has('debug');
   const timings = [];       // laatste metingen van serververzoeken (zichtbaar met ?debug)
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -1363,13 +1463,14 @@
       const n = cache[c.key].loaded
         ? cache[c.key].pool.filter(s => s.Status === 'Beschikbaar').length
         : null;
-      return `<button class="${activeCat === c.key ? 'active' : ''}" onclick="switchCategory('${c.key}')">${c.title}${n !== null ? `<span class="n">(${n})</span>` : ''}</button>`;
+      return `<button class="${activeCat === c.key ? 'active' : ''}" onclick="switchCategory('${c.key}')">${c.title}${n !== null ? `<span class="cnt">${n}</span>` : ''}</button>`;
     }).join('');
   }
 
   function updateHeader(){
     const meta = currentCatMeta();
     document.getElementById('pageTitle').textContent = meta.title;
+    document.getElementById('pageSub').textContent = t(activeTab === 'archive' ? 'sub_archive' : 'sub_pool');
     document.getElementById('addBtn').style.display = (isAdmin && activeTab === 'pool') ? 'inline-block' : 'none';
   }
 
@@ -1388,14 +1489,36 @@
 
     if(all.length <= 1){ el.innerHTML = ''; return; }
 
-    el.innerHTML = all.map(t => {
+    const alle = `<button class="type-chip ${typeFilter === null ? 'active-filter' : ''}" onclick="toggleTypeFilter(typeFilter)">${t('filter_all')} <span class="n">· ${data.pool.length}</span></button>`;
+    el.innerHTML = alle + all.map(t => {
       const n = counts[t] || 0;
       return `
       <button class="type-chip ${typeFilter === t ? 'active-filter' : ''} ${n === 0 ? 'zero' : ''}" onclick="toggleTypeFilter('${escapeHtml(t).replace(/'/g,"\\'")}')">
-        ${escapeHtml(t)} <span class="n">${n}</span>
+        ${escapeHtml(t)} <span class="n">· ${n}</span>
       </button>
     `;
     }).join('');
+  }
+
+  // Dag-labels bij gereserveerde items: hoe lang is het al gereserveerd?
+  // Grijs = rustig, oranje = al even (RESERVED_WARN_DAYS), rood = lang (RESERVED_LATE_DAYS).
+  const RESERVED_WARN_DAYS = 7;
+  const RESERVED_LATE_DAYS = 14;
+  function daysReserved(s){
+    if(s.Status !== 'Gereserveerd' || !s.GereserveerdOp) return null;
+    const d = new Date(s.GereserveerdOp);
+    if(isNaN(d)) return null;
+    return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+  }
+  function dayLabelText(n){ return n <= 0 ? t('day_today') : (n === 1 ? t('day_one') : t('day_many', {n})); }
+  function dayLabelHtml(s){
+    const n = daysReserved(s);
+    if(n === null) return '';
+    const cls = n >= RESERVED_LATE_DAYS ? 'late' : (n >= RESERVED_WARN_DAYS ? 'soon' : 'calm');
+    return `<span class="day-label ${cls}" title="${escapeHtml(t('since_note', {date: fmtDate(s.GereserveerdOp)}))}">${dayLabelText(n)}</span>`;
+  }
+  function statusHtml(s){
+    return `<span class="status"><span class="dot ${s.Status}"></span>${t('status_' + s.Status)}</span>`;
   }
 
   function updateCounts(){
@@ -1404,10 +1527,14 @@
     const archiveScoped = typeFilter ? data.archive.filter(s => s.Type === typeFilter) : data.archive;
     const beschikbaar = poolScoped.filter(s => s.Status === 'Beschikbaar').length;
     const gereserveerd = poolScoped.filter(s => s.Status === 'Gereserveerd').length;
+    const longest = poolScoped.reduce((m, s) => { const n = daysReserved(s); return n !== null && n > m ? n : m; }, -1);
+    const reservedSub = gereserveerd === 0 ? t('stat_reserved_none')
+      : (longest >= 0 ? t('stat_reserved_longest', {n: dayLabelText(longest)}) : '');
     document.getElementById('counts').innerHTML = `
-      <button class="count-tag available ${counterFilter === 'Beschikbaar' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Beschikbaar')"><span class="bullet"></span>${t('count_beschikbaar', {n: beschikbaar})}</button>
-      <button class="count-tag reserved ${counterFilter === 'Gereserveerd' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Gereserveerd')"><span class="bullet"></span>${t('count_gereserveerd', {n: gereserveerd})}</button>
-      <button class="count-tag delivered" onclick="toggleCounterFilter('Uitgeleverd')"><span class="bullet"></span>${t('count_uitgeleverd', {n: archiveScoped.length})}</button>
+      <button class="stat ${counterFilter === 'Beschikbaar' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Beschikbaar')"><div class="lbl">${t('status_Beschikbaar')}</div><div class="num">${beschikbaar}</div><div class="sub">${t('stat_avail_sub')}</div></button>
+      <button class="stat attn ${counterFilter === 'Gereserveerd' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Gereserveerd')"><div class="lbl">${t('status_Gereserveerd')}</div><div class="num">${gereserveerd}</div><div class="sub">${reservedSub}</div></button>
+      <button class="stat ${activeTab === 'archive' ? 'active-filter' : ''}" onclick="toggleCounterFilter('Uitgeleverd')"><div class="lbl">${t('status_Uitgeleverd')}</div><div class="num">${archiveScoped.length}</div><div class="sub">${t('stat_delivered_sub')}</div></button>
+      <div class="stat"><div class="lbl">${t('stat_total')}</div><div class="num">${poolScoped.length}</div><div class="sub">${t('stat_total_sub')}</div></div>
     `;
     document.getElementById('tabPool').textContent = `${t('tab_pool')} (${poolScoped.length})`;
     document.getElementById('tabArchive').textContent = `${t('tab_archive')} (${archiveScoped.length})`;
@@ -1422,8 +1549,6 @@
     const pill = document.getElementById('tabPill');
     const tabsEl = btn ? btn.closest('.tabs') : null;
     if(!btn || !pill || !tabsEl) return;
-    // getBoundingClientRect i.p.v. offsetLeft: geeft de echte gerenderde positie, ongeacht
-    // padding/border-afrondingen, dus de pil komt exact onder de knop te staan.
     const btnRect = btn.getBoundingClientRect();
     const tabsRect = tabsEl.getBoundingClientRect();
     pill.style.width = btnRect.width + 'px';
@@ -1439,10 +1564,9 @@
     cells += `${sortTh('Serienummer', t('th_serienummer'))}${sortTh('MEnummer', t('th_me'))}`;
     if(meta.hasBouwjaar) cells += sortTh('Bouwjaar', t('th_bouwjaar'));
     if(!isArchive){
-      cells += sortTh('Status', t('th_status')) + `<th>${t('th_notitie')}</th><th>${t('th_acties')}</th>`;
+      cells += sortTh('Status', t('th_status')) + `<th>${t('th_notitie')}</th><th style="text-align:right">${t('th_acties')}</th>`;
     } else {
-      cells += sortTh('UitgeleverdOp', t('th_uitgeleverd_op')) + sortTh('Ticket', t('th_ticket')) + sortTh('Klant', t('th_klant'));
-      if(isAdmin) cells += `<th>${t('th_acties')}</th>`;
+      cells += sortTh('UitgeleverdOp', t('th_uitgeleverd_op')) + sortTh('Ticket', t('th_ticket')) + sortTh('Klant', t('th_klant')) + `<th style="text-align:right">${t('th_acties')}</th>`;
     }
     cells += '</tr>';
     document.getElementById('theadRow').innerHTML = cells;
@@ -1464,6 +1588,155 @@
     return out;
   }
 
+  // ── Detail (informatie links, Beheer-paneel rechts) ──────────────────────────
+  let openDetailId = null;
+  let detailReveal = null; // alleen bij het openen animeren, niet bij elke verversing
+  function toggleDetail(id){
+    openDetailId = (openDetailId === id) ? null : id;
+    detailReveal = openDetailId;
+    render();
+  }
+  function dd(label, valueHtml, extra){
+    return `<div class="dd"${extra ? ` style="${extra}"` : ''}><span class="lbl">${label}</span><b>${valueHtml}</b></div>`;
+  }
+  function manageHtml(s, isArchive){
+    const id = s.ID;
+    let b = '';
+    if(!isArchive){
+      b += s.Status === 'Gereserveerd'
+        ? `<button class="btn" onclick="resetAvailable('${id}')">${t('btn_vrijgeven')}</button>`
+        : `<button class="btn pri" onclick="openReserveModal('${id}')">${t('btn_reserveren')}</button>`;
+      if(isAdmin){
+        b += `<hr><button class="btn" onclick="openItemDialog('edit','${id}')">${t('btn_bewerken')}</button>`
+          + `<button class="btn" onclick="openDeliverModal('${id}')">${t('btn_uitleveren')}</button>`
+          + `<button class="btn danger" onclick="openDeleteModal('${id}')">${t('btn_verwijderen')}</button>`;
+      } else {
+        b += `<p class="manage-hint">${t('manage_login_hint')}</p>`;
+      }
+    } else if(isAdmin){
+      b += `<button class="btn" onclick="openRestoreModal('${id}')">${t('btn_restore')}</button>`
+        + `<button class="btn danger" onclick="openDeleteModal('${id}')">${t('btn_verwijderen')}</button>`;
+    } else {
+      b += `<p class="manage-hint">${t('manage_login_hint')}</p>`;
+    }
+    return `<div class="manage"><h3>${t('detail_manage')}</h3>${b}</div>`;
+  }
+  function detailHtml(s, isArchive, meta){
+    const copy = v => `onclick="copyToClipboard('${escapeHtml(v)}')" title="${t('title_copy')}" style="cursor:pointer"`;
+    let item = `<h3>${t('detail_item')}</h3>`
+      + dd(t('th_type'), escapeHtml(s.Type))
+      + (meta.hasBouwjaar ? dd(t('th_maat'), escapeHtml(deriveSize(s.Serienummer))) : '')
+      + `<div class="dd"><span class="lbl">${t('th_serienummer')}</span><b class="mono" ${copy(s.Serienummer)}>${escapeHtml(s.Serienummer || '—')}</b></div>`
+      + `<div class="dd"><span class="lbl">${t('th_me')}</span><b class="mono" ${copy(s.MEnummer)}>${escapeHtml(s.MEnummer || '—')}</b></div>`
+      + (meta.hasBouwjaar ? dd(t('th_bouwjaar'), escapeHtml(s.Bouwjaar || '—')) : '')
+      + dd(t('th_id'), escapeHtml(s.ID))
+      + dd(t('detail_added'), fmtDate(s.ToegevoegdOp))
+      + dd(t('detail_updated'), fmtDateTime(s.BijgewerktOp));
+    let st = `<h3>${t('detail_status')}</h3>` + dd(t('th_status'), statusHtml(s));
+    if(isArchive){
+      st += dd(t('th_uitgeleverd_op'), fmtDateTime(s.UitgeleverdOp))
+        + dd(t('th_ticket'), escapeHtml(s.Ticket || '—'))
+        + dd(t('th_klant'), escapeHtml(s.Klant || '—'));
+    } else if(s.Status === 'Gereserveerd' && s.GereserveerdOp){
+      st += dd(t('detail_reserved_since'), `${fmtDate(s.GereserveerdOp)} ${dayLabelHtml(s)}`);
+    }
+    st += dd(t('th_notitie'), escapeHtml(s.Notitie || '—'), 'grid-column:1/-1');
+    return `<div class="detail${s.ID === detailReveal ? ' reveal' : ''}"><div class="detail-main"><div class="dcard">${item}</div><div class="dcard">${st}</div></div>${manageHtml(s, isArchive)}</div>`;
+  }
+
+  // Knoppen per rij: hoofdactie (Reserveren/Vrijgeven), voor beheerders Uitleveren, en Details.
+  function rowButtons(s, isArchive){
+    const id = s.ID;
+    const open = openDetailId === id;
+    const details = `<button class="btn sm" aria-expanded="${open}" onclick="toggleDetail('${id}')">${open ? t('btn_close') : t('btn_details')}</button>`;
+    if(!isArchive){
+      const primary = s.Status === 'Gereserveerd'
+        ? `<button class="btn sm" onclick="resetAvailable('${id}')">${t('btn_vrijgeven')}</button>`
+        : `<button class="btn pri sm" onclick="openReserveModal('${id}')">${t('btn_reserveren')}</button>`;
+      const deliver = isAdmin ? `<button class="btn sm" onclick="openDeliverModal('${id}')">${t('btn_uitleveren')}</button>` : '';
+      return primary + deliver + details;
+    }
+    const restore = isAdmin ? `<button class="btn sm" onclick="openRestoreModal('${id}')">${t('btn_restore')}</button>` : '';
+    return restore + details;
+  }
+
+  // Groepeert de lijst per status, met kopjes en tellers.
+  function buildSections(list, isArchive){
+    if(isArchive) return list.length ? [{ status: 'Uitgeleverd', name: t('status_Uitgeleverd'), hint: '', items: list }] : [];
+    const order = ['Beschikbaar', 'Gereserveerd'];
+    const groups = {};
+    list.forEach(s => { (groups[s.Status] = groups[s.Status] || []).push(s); });
+    Object.keys(groups).forEach(k => { if(!order.includes(k)) order.push(k); });
+    return order.filter(k => groups[k]).map(k => ({
+      status: k, name: t('status_' + k) === 'status_' + k ? k : t('status_' + k),
+      hint: k === 'Beschikbaar' ? t('stat_avail_sub') : (k === 'Gereserveerd' ? t('sec_hint_reserved') : ''),
+      items: groups[k]
+    }));
+  }
+
+  function rowHtml(s, isArchive, meta, ncols){
+    const maatCell = meta.hasBouwjaar ? `<td class="mono">${escapeHtml(deriveSize(s.Serienummer))}</td>` : '';
+    const bjCell = meta.hasBouwjaar ? `<td>${escapeHtml(s.Bouwjaar || '—')}</td>` : '';
+    const snCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.Serienummer)}')" title="${t('title_copy')}">${escapeHtml(s.Serienummer)}</td>`;
+    const meCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.MEnummer)}')" title="${t('title_copy')}">${escapeHtml(s.MEnummer)}</td>`;
+    const flash = s.ID === flashId ? ' row-flash' : '';
+    let tr;
+    if(!isArchive){
+      const isReserved = s.Status === 'Gereserveerd';
+      const actions = s._pending ? `<span class="pending-note">${t('saving_short')}</span>` : `<div class="row-actions">${rowButtons(s, false)}</div>`;
+      tr = `
+        <tr class="${isReserved ? 'row-reserved' : 'row-available'}${s._pending ? ' row-pending' : ''}${flash}">
+          <td class="id-cell">${s._pending ? '…' : s.ID}</td>
+          <td class="model-cell">${escapeHtml(s.Type)}</td>
+          ${maatCell}${snCell}${meCell}${bjCell}
+          <td><div class="status-cell">${statusHtml(s)}${dayLabelHtml(s)}</div></td>
+          <td class="notes-cell">${escapeHtml(s.Notitie || '—')}</td>
+          <td>${actions}</td>
+        </tr>`;
+    } else {
+      tr = `
+        <tr class="row-archived${flash}">
+          <td class="id-cell">${s.ID}</td>
+          <td class="model-cell">${escapeHtml(s.Type)}</td>
+          ${maatCell}${snCell}${meCell}${bjCell}
+          <td>${fmtDateTime(s.UitgeleverdOp)}</td>
+          <td>${escapeHtml(s.Ticket || '—')}</td>
+          <td>${escapeHtml(s.Klant || '—')}</td>
+          <td><div class="row-actions">${rowButtons(s, true)}</div></td>
+        </tr>`;
+    }
+    if(openDetailId === s.ID && !s._pending){
+      tr += `<tr class="detail-row"><td colspan="${ncols}">${detailHtml(s, isArchive, meta)}</td></tr>`;
+    }
+    return tr;
+  }
+
+  function cardHtml(s, isArchive, meta){
+    const isReserved = !isArchive && s.Status === 'Gereserveerd';
+    const maat = meta.hasBouwjaar ? deriveSize(s.Serienummer) : '';
+    const subBits = [`ME ${escapeHtml(s.MEnummer || '—')}`];
+    if(meta.hasBouwjaar && s.Bouwjaar) subBits.push(escapeHtml(s.Bouwjaar));
+    if(isArchive) subBits.push(fmtDateTime(s.UitgeleverdOp));
+    const note = isArchive
+      ? [s.Ticket, s.Klant].filter(Boolean).map(escapeHtml).join(' · ')
+      : escapeHtml(s.Notitie || '');
+    const acts = s._pending ? `<span class="pending-note">${t('saving_short')}</span>` : `<div class="mcard-acts">${rowButtons(s, isArchive)}</div>`;
+    const status = isArchive ? '' : `<div class="status-cell" style="flex-direction:row;align-items:center;gap:10px">${statusHtml(s)}${dayLabelHtml(s)}</div>`;
+    const detail = (openDetailId === s.ID && !s._pending) ? detailHtml(s, isArchive, meta) : '';
+    return `
+      <div class="mcard${isReserved ? ' row-reserved' : ''}${s._pending ? ' row-pending' : ''}${s.ID === flashId ? ' row-flash' : ''}">
+        <div class="mcard-top"><div class="mcard-main">
+          <b>${escapeHtml(s.Type)}${maat && maat !== '—' ? ` · ${escapeHtml(maat)}` : ''}</b>
+          <span class="mono" onclick="copyToClipboard('${escapeHtml(s.Serienummer)}')">${escapeHtml(s.Serienummer || '—')}</span>
+          <span class="sub">${subBits.join(' · ')}</span>
+        </div></div>
+        ${status}
+        ${note ? `<div class="mcard-note">${note}</div>` : ''}
+        ${acts}
+        ${detail}
+      </div>`;
+  }
+
   function render(){
     renderCatTabs();
     updateHeader();
@@ -1476,21 +1749,26 @@
     const meta = currentCatMeta();
     const data = cache[activeCat];
     const rowsEl = document.getElementById('rows');
+    const cardsEl = document.getElementById('cards');
+    const panelEl = document.querySelector('.panel');
     const emptyEl = document.getElementById('emptyMsg');
     const errorEl = document.getElementById('errorMsg');
-    const colspan = 6 + (meta.hasBouwjaar ? 2 : 0);
+    const ncols = document.querySelectorAll('#theadRow th').length;
 
     if(data.error){
-      rowsEl.innerHTML = '';
+      rowsEl.innerHTML = ''; cardsEl.innerHTML = '';
+      panelEl.classList.add('hide');
       emptyEl.style.display = 'none';
       errorEl.style.display = 'block';
       errorEl.innerHTML = `${escapeHtml(data.error)}<br><button onclick="reloadCurrentCategory()">${t('btn_opnieuw_proberen')}</button>`;
       return;
     }
     errorEl.style.display = 'none';
+    panelEl.classList.remove('hide');
 
     if(!data.loaded){
-      rowsEl.innerHTML = skeletonRows(colspan);
+      rowsEl.innerHTML = skeletonRows(ncols);
+      cardsEl.innerHTML = '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>';
       emptyEl.style.display = 'none';
       return;
     }
@@ -1515,7 +1793,8 @@
     filtered = applySort(filtered);
 
     if(filtered.length === 0){
-      rowsEl.innerHTML = '';
+      rowsEl.innerHTML = ''; cardsEl.innerHTML = '';
+      panelEl.classList.add('hide');
       emptyEl.style.display = 'block';
       if(isArchive && typeFilter) emptyEl.textContent = t('empty_archive_type', {type: typeFilter});
       else if(isArchive) emptyEl.textContent = t('empty_archive');
@@ -1527,58 +1806,14 @@
     }
     emptyEl.style.display = 'none';
 
-    rowsEl.innerHTML = filtered.map(s => {
-      const bjCell = meta.hasBouwjaar ? `<td data-label="${t('th_bouwjaar')}">${escapeHtml(s.Bouwjaar || '—')}</td>` : '';
-      const maatCell = meta.hasBouwjaar ? `<td class="mono" data-label="${t('th_maat')}">${escapeHtml(deriveSize(s.Serienummer))}</td>` : '';
-      const snCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.Serienummer)}')" title="${t('title_copy')}">${escapeHtml(s.Serienummer)}</td>`;
-      const meCell = `<td class="code-cell mono" onclick="copyToClipboard('${escapeHtml(s.MEnummer)}')" title="${t('title_copy')}">${escapeHtml(s.MEnummer)}</td>`;
-
-      if(!isArchive){
-        const isReserved = s.Status === 'Gereserveerd';
-        let primaryBtn = isReserved
-          ? `<button class="primary-action release" onclick="resetAvailable('${s.ID}', this)">${t('btn_vrijgeven')}</button>`
-          : `<button class="primary-action reserve" onclick="openReserveModal('${s.ID}')">${t('btn_reserveren')}</button>`;
-        let adminBtns = '';
-        if(isAdmin){
-          adminBtns = `
-            <button onclick="openDeliverModal('${s.ID}')">${t('btn_uitleveren')}</button>
-            <div style="position:relative;display:inline-block;">
-              <button class="kebab-btn" onclick="toggleKebab('${s.ID}', event)">⋯</button>
-              <div class="kebab-menu" id="kebab-${s.ID}">
-                <button onclick="openItemDialog('edit','${s.ID}')">${t('btn_bewerken')}</button>
-                <button class="danger" onclick="openDeleteModal('${s.ID}')">${t('btn_verwijderen')}</button>
-              </div>
-            </div>`;
-        }
-        const sinceNote = (isReserved && s.GereserveerdOp) ? `<span class="since-note">${t('since_note', {date: fmtDate(s.GereserveerdOp)})}</span>` : '';
-        return `
-        <tr class="${isReserved ? 'row-reserved' : 'row-available'}${s._pending ? ' row-pending' : ''}${s.ID === flashId ? ' row-flash' : ''}">
-          <td class="id-cell" data-label="${t('th_id')}">${s._pending ? '…' : s.ID}</td>
-          <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
-          ${maatCell}
-          ${snCell}
-          ${meCell}
-          ${bjCell}
-          <td data-label="${t('th_status')}"><span class="status-pill ${s.Status}"><span class="bullet"></span>${t('status_' + s.Status)}</span>${sinceNote}</td>
-          <td class="notes-cell" data-label="${t('th_notitie')}">${escapeHtml(s.Notitie || '—')}</td>
-          <td data-label="${t('th_acties')}">${s._pending ? `<span class="pending-note">${t('saving_short')}</span>` : `<div class="row-actions">${primaryBtn}${adminBtns}</div>`}</td>
-        </tr>`;
-      } else {
-        return `
-        <tr class="row-archived">
-          <td class="id-cell" data-label="${t('th_id')}">${s.ID}</td>
-          <td class="model-cell" data-label="${t('th_type')}">${escapeHtml(s.Type)}</td>
-          ${maatCell}
-          ${snCell}
-          ${meCell}
-          ${bjCell}
-          <td data-label="${t('th_uitgeleverd_op')}">${fmtDateTime(s.UitgeleverdOp)}</td>
-          <td data-label="${t('th_ticket')}">${escapeHtml(s.Ticket || '—')}</td>
-          <td data-label="${t('th_klant')}">${escapeHtml(s.Klant || '—')}</td>
-          ${isAdmin ? `<td data-label="${t('th_acties')}"><div class="row-actions"><button onclick="openRestoreModal('${s.ID}')">${t('btn_restore')}</button><button class="danger-action" onclick="openDeleteModal('${s.ID}')">${t('btn_verwijderen')}</button></div></td>` : ''}
-        </tr>`;
-      }
-    }).join('');
+    const sections = buildSections(filtered, isArchive);
+    rowsEl.innerHTML = sections.map(sec => `
+      <tr class="sec-row"><td colspan="${ncols}"><div class="sec-head"><span class="dot ${sec.status}"></span><span class="name">${escapeHtml(sec.name)}</span><span class="cnt">${sec.items.length}</span>${sec.hint ? `<span class="hint">${escapeHtml(sec.hint)}</span>` : ''}</div></td></tr>
+      ${sec.items.map(s => rowHtml(s, isArchive, meta, ncols)).join('')}`).join('');
+    cardsEl.innerHTML = sections.map(sec => `
+      <div class="msec"><span class="dot ${sec.status}"></span><b>${escapeHtml(sec.name)}</b><span class="cnt">${sec.items.length}</span></div>
+      ${sec.items.map(s => cardHtml(s, isArchive, meta)).join('')}`).join('');
+    detailReveal = null;
   }
 
   // ══════════════════════════════════════════════════════════
